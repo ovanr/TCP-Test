@@ -1,12 +1,16 @@
 from testCommand import *
 from baseRunner import BaseRunner
 import socket
+import logging
 
 MAX_READ_SIZE = 4096 # in bytes
 
 class SUT(BaseRunner):
     def __init__(self):
         self.testNumber = -1
+
+        logging.getLogger("").setLevel(logging.INFO)
+        logging.info("sut started")
 
     def reset(self):
         if not hasattr(self, "clientSocket"):
@@ -30,54 +34,46 @@ class SUT(BaseRunner):
                 raise someException
 
     def handleConnectCommand(self, parameters: ConnectParameters):
-        try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.bind((parameters.destination, parameters.srcPort))
+        logging.info(f"starting socket on {parameters.srcPort}")
+        
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind((parameters.destination, parameters.srcPort))
+        self.socket.listen(1)
 
-            self.socket.listen(1)
-            (self.clientSocket, _) = self.socket.accept()
+        logging.info("bind and listen successful")
 
-            return self.makeResult(ResultParameters(
-                status=0,
-                operation=CommandType["CONNECT"]
-            ))
-        except Exception as e:
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["CONNECT"],
-                errorMessage=str(e)
-            ))
+        (self.clientSocket, _) = self.socket.accept()
+
+        logging.info("received client connect")
+
+        return self.makeResult(ResultParameters(
+            status=0,
+            operation=CommandType["CONNECT"]
+        ))
 
     def handleSendCommand(self, parameters: SendParameters):
-        try:
-            self.clientSocket.send(parameters.bytes)
-        except Exception as e:
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["SEND"],
-                errorMessage=str(e)
-            ))
+        logging.info("sending packet to client")
+        self.clientSocket.send(parameters.bytes)
+        logging.warn("sending completed")
+
+        return self.makeResult(ResultParameters(
+            status=0,
+            operation=CommandType["SEND"],
+        ))
 
     def handleReceiveCommand(self, parameters: ReceiveParameters):
-        try:
-            self.clientSocket.settimeout(parameters.timeout)
-            payload = self.clientSocket.recv(MAX_READ_SIZE)
-        except Exception as e:
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["RECEIVE"],
-                errorMessage=str(e)
-            ))
+        logging.info("receiving packet from client")
+
+        self.clientSocket.settimeout(parameters.timeout)
+        payload = self.clientSocket.recv(MAX_READ_SIZE)
 
         # cannot check TCP flags
         # so only check for the data sent
         if (parameters.bytes and parameters.bytes != payload):
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["RECEIVE"],
-                errorMessage=f"Invalid data received: '{payload}'"
-            ))
+            logging.warn("incorrect bytes received")
+            raise UserException(f"Invalid data received: '{payload}'")
 
+        logging.info("receive completed")
         return self.makeResult(ResultParameters(
             status=0,
             operation=CommandType["RECEIVE"]
@@ -85,19 +81,15 @@ class SUT(BaseRunner):
 
 
     def handleDisconnectCommand(self):
-        try:
-            self.reset()
+        logging.info("disconnecting from client")
+        self.reset()
+        logging.info("disconnect completed")
 
-            return self.makeResult(ResultParameters(
-                status=0,
-                operation=CommandType["DISCONNECT"]
-            ))
-        except Exception as e:
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["DISCONNECT"],
-                errorMessage=str(e)
-            ))
+        return self.makeResult(ResultParameters(
+            status=0,
+            operation=CommandType["DISCONNECT"]
+        ))
 
     def handleAbortCommand(self):
+        logging.info("aborting from client")
         return self.handleDisconnectCommand()

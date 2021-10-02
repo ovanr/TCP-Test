@@ -1,17 +1,23 @@
 #!/usr/bin/env python3
 
-from re import error
 from scapy.packet import Raw
 from scapy.layers.inet import IP, TCP
 from scapy.sendrecv import sr1, send, sniff
 from random import randint
 from baseRunner import BaseRunner
+import logging
 
 from testCommand import *
+
+# timeout for the sr1 command (in seconds)
+TIMEOUT=20
 
 class TestServer(BaseRunner):
     def __init__(self):
         self.testNumber = -1
+        logging.getLogger("").setLevel(logging.INFO)
+
+        logging.info("test server started")
 
     @staticmethod
     def packetLength(packet):
@@ -30,7 +36,12 @@ class TestServer(BaseRunner):
     def sr(self, packet):
         size = TestServer.packetLength(packet)
 
-        ret = sr1(packet)
+        ret = sr1(packet, timeout=TIMEOUT)
+
+        if not ret:
+            logging.info("timeout reached")
+            raise UserException("Got no response to packet")
+
         self.seq += size
         self.ack = ret.seq + TestServer.packetLength(ret)
 
@@ -47,44 +58,40 @@ class TestServer(BaseRunner):
                    window: Optional[int] = None,
                    chksum: Optional[int] = None,
                    urgentPointer: Optional[int] = None):
-        return self._ip / \
-               TCP(sport=self.sport, 
-                   dport=self.dport,
-                   seq=(seq or self.seq),
-                   ack=(ack or self.ack),
-                   flags=(flags or ""),
-                   window=(window or 8192),
-                   chksum=chksum,
-                   urgptr=(urgentPointer or 0))
+
+        return self._ip / TCP(sport=self.sport, 
+                              dport=self.dport,
+                              seq=(seq or self.seq),
+                              ack=(ack or self.ack),
+                              flags=(flags or ""),
+                              window=(window or 8192),
+                              chksum=chksum,
+                              urgptr=(urgentPointer or 0))
 
     def handleConnectCommand(self, parameters: ConnectParameters):
+        logging.info(f"connecting to {parameters.destination}")
         self.reset()
         
         self.sport = parameters.srcPort
         self.dport = parameters.dstPort
         self._ip = IP(dst=parameters.destination) 
 
-        try:
-            syn = self.makePacket(flags="S")
-            synack = self.sr(syn)
+        syn = self.makePacket(flags="S")
 
-            synackFlags = synack.sprint("%TCP.flags%")
-            if "S" not in synackFlags or "A" not in synackFlags:
-                return self.makeResult(ResultParameters(
-                    status=1,
-                    operation=CommandType["CONNECT"],
-                    errorMessage=f"Invalid flags received: expected 'SA' got {synackFlags}"
-                ))
+        logging.info("sending first syn")
+        synack = self.sr(syn)
+        logging.info("received response")
 
-            ack = self.makePacket(flags="A")
-            send(ack)
+        synackFlags = synack.sprint("%TCP.flags%")
+        if "S" not in synackFlags or "A" not in synackFlags:
+            raise UserException(f"Invalid flags received: expected 'SA' got {synackFlags}")
 
-        except Exception as e:
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["CONNECT"],
-                errorMessage=str(e)
-            ))
+        logging.info("response is syn/ack")
+
+        ack = self.makePacket(flags="A")
+        send(ack)
+
+        logging.info("sent ack")
 
         return self.makeResult(ResultParameters(
             status=0,
@@ -92,6 +99,8 @@ class TestServer(BaseRunner):
         ))
 
     def handleSendCommand(self, parameters: SendParameters):
+        logging.info(f"Sending packet with flags: {parameters.flags}")
+
         pkt = self.makePacket(
             seq=parameters.sequenceNumber,
             ack=parameters.acknowledgementNumber,
@@ -104,14 +113,8 @@ class TestServer(BaseRunner):
         if parameters.bytes:
             pkt = pkt / Raw(load=parameters.bytes)
 
-        try:
-            self.send(pkt)
-        except Exception as e:
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["SEND"],
-                errorMessage=str(e)
-            ))
+        self.send(pkt)
+        logging.info("Packet was sent")
 
         return self.makeResult(ResultParameters(
             status=0,
@@ -119,6 +122,8 @@ class TestServer(BaseRunner):
         ))
 
     def handleReceiveCommand(self, parameters: ReceiveParameters):
+        logging.info(f"Receiving packet with expected flags: {parameters.flags}")
+
         queue = []
         sniff(count=1,
               store=True,
@@ -128,22 +133,18 @@ class TestServer(BaseRunner):
               prn=lambda p: queue.append(p),
               timeout=parameters.timeout)
 
+        logging.info("Sniffing finished")
+
         if len(queue) == 0:
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["RECEIVE"],
-                errorMessage="Timeout reached."
-            ))
+            logging.warn("no packet received due to timeout")
+            raise UserException("Timeout reached")
 
         [packet] = queue
         payload = packet if hasattr(packet, 'load') else b''
 
         if (parameters.bytes and parameters.bytes != payload):
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["RECEIVE"],
-                errorMessage=f"Invalid data received: '{payload}'"
-            ))
+            logging.warn("packet contained incorrect bytes")
+            raise UserException(f"Invalid data received: '{payload}'")
 
         if (parameters.flags):
             missingFlags = ''.join(
@@ -151,12 +152,10 @@ class TestServer(BaseRunner):
                        parameters.flags.split(''))
             )
             if missingFlags:
-                return self.makeResult(ResultParameters(
-                    status=1,
-                    operation=CommandType["RECEIVE"],
-                    errorMessage=f"Flags are missing: {missingFlags}"
-                ))
+                logging.warn("packet contained incorrect flags")
+                raise UserException(f"Flags are missing: {missingFlags}")
 
+        logging.info("received packet passed validations")
 
         return self.makeResult(ResultParameters(
             status=0,
@@ -164,26 +163,21 @@ class TestServer(BaseRunner):
         ))
 
     def handleDisconnectCommand(self):
-        try:
-            fin = self.makePacket(flags="F")
-            finack = self.sr(fin)
-            finackFlags = finack.sprint("%TCP.flags%")
-            if "F" not in finackFlags or "A" not in finackFlags:
-                return self.makeResult(ResultParameters(
-                    status=1,
-                    operation=CommandType["DISCONNECT"],
-                    errorMessage=f"Invalid flags received: expected 'FA' got {finackFlags}"
-                ))
+        logging.info(f"graceful disconnect from client")
 
-            ack = self.makePacket(flags="A")
-            send(ack)
+        fin = self.makePacket(flags="F")
+        finack = self.sr(fin)
+        logging.info("send fin packet")
 
-        except Exception as e:
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["DISCONNECT"],
-                errorMessage=str(e)
-            ))
+        finackFlags = finack.sprint("%TCP.flags%")
+        if "F" not in finackFlags or "A" not in finackFlags:
+            logging.warn("response did not contain FA")
+            raise UserException(f"Invalid flags received: expected 'FA' got {finackFlags}")
+
+        logging.info("sending ack")
+        ack = self.makePacket(flags="A")
+        send(ack)
+        logging.info("ack send")
 
         return self.makeResult(ResultParameters(
             status=0,
@@ -191,18 +185,11 @@ class TestServer(BaseRunner):
         ))
 
     def handleAbortCommand(self):
-        try:
-            self.reset()
-        except Exception as e:
-            return self.makeResult(ResultParameters(
-                status=1,
-                operation=CommandType["ABORT"],
-                errorMessage=str(e)
-            ))
+        logging.info(f"aborting connection")
+        self.reset()
+        logging.info(f"abort done.")
 
         return self.makeResult(ResultParameters(
             status=0,
             operation=CommandType["ABORT"],
         ))
-
-

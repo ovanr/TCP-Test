@@ -12,16 +12,30 @@ class BaseRunner(ABC):
             except Exception:
                 pass
 
-        if cmd.commandType == CommandType["CONNECT"]:
-            return self.handleConnectCommand(cast(ConnectParameters, cmd.commandParameters))
-        elif cmd.commandType == CommandType["RECEIVE"]:
-            return self.handleReceiveCommand(cast(ReceiveParameters, cmd.commandParameters))
-        elif cmd.commandType == CommandType["SEND"]:
-            return self.handleSendCommand(cast(SendParameters, cmd.commandParameters))
-        elif cmd.commandType == CommandType["DISCONNECT"]:
-            return self.handleDisconnectCommand()
-        elif cmd.commandType == CommandType["ABORT"]:
-            return self.handleAbortCommand()
+        try:
+            if cmd.commandType == CommandType["CONNECT"]:
+                return self.handleConnectCommand(cast(ConnectParameters, cmd.commandParameters))
+            elif cmd.commandType == CommandType["RECEIVE"]:
+                return self.handleReceiveCommand(cast(ReceiveParameters, cmd.commandParameters))
+            elif cmd.commandType == CommandType["SEND"]:
+                return self.handleSendCommand(cast(SendParameters, cmd.commandParameters))
+            elif cmd.commandType == CommandType["DISCONNECT"]:
+                return self.handleDisconnectCommand()
+            elif cmd.commandType == CommandType["ABORT"]:
+                return self.handleAbortCommand()
+        except UserException as e:
+            return self.makeResult(ResultParameters(
+                status=1,
+                operation=cmd.commandType,
+                errorMessage=str(e)
+            ))
+        except Exception as e:
+            return self.makeResult(ResultParameters(
+                status=2,
+                operation=cmd.commandType,
+                errorMessage=str(e)
+            ))
+
 
     def makeResult(self, params: ResultParameters):
         return TestCommand(

@@ -2,6 +2,9 @@ from enum import Enum
 from typing import Optional, Union
 from copy import deepcopy
 
+class UserException(Exception):
+    pass
+
 class CommandType(Enum):
     SEND = 0
     RECEIVE = 1
