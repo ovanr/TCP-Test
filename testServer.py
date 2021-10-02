@@ -61,10 +61,10 @@ class TestServer(BaseRunner):
 
         return self._ip / TCP(sport=self.sport, 
                               dport=self.dport,
-                              seq=(seq or self.seq),
-                              ack=(ack or self.ack),
+                              seq=(seq if ack != None else self.seq),
+                              ack=(ack if ack != None else self.ack),
                               flags=(flags or ""),
-                              window=(window or 8192),
+                              window=(window if window != None else 8192),
                               chksum=chksum,
                               urgptr=(urgentPointer or 0))
 
@@ -82,7 +82,7 @@ class TestServer(BaseRunner):
         synack = self.sr(syn)
         logging.info("received response")
 
-        synackFlags = synack.sprint("%TCP.flags%")
+        synackFlags = synack.sprintf("%TCP.flags%")
         if "S" not in synackFlags or "A" not in synackFlags:
             raise UserException(f"Invalid flags received: expected 'SA' got {synackFlags}")
 
@@ -165,7 +165,7 @@ class TestServer(BaseRunner):
     def handleDisconnectCommand(self):
         logging.info(f"graceful disconnect from client")
 
-        fin = self.makePacket(flags="F")
+        fin = self.makePacket(flags="FA")
         finack = self.sr(fin)
         logging.info("send fin packet")
 
