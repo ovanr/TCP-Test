@@ -25,7 +25,7 @@ async def router(websocket, path):
         await thread(sutQueue, websocket)
 
 async def main():
-    async with websockets.serve(router, "", 8765): #type: ignore
+    async with websockets.serve(router, "192.168.92.112", 8765): #type: ignore
         await asyncio.Future()  # run forever
 
 task = Thread(target=lambda: asyncio.run(main()))

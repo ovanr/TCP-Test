@@ -8,7 +8,7 @@ from sut import SUT
 from typing import cast
 
 async def runner(sut: SUT):
-    async with websockets.connect("ws://localhost:8765/sut") as websocket: #type: ignore
+    async with websockets.connect("ws://192.168.92.112:8765/sut") as websocket: #type: ignore
         while True: 
             cmd = cast(TestCommand, jsonpickle.decode(await websocket.recv()))
             result = sut.executeCommand(cmd)

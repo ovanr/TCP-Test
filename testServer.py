@@ -35,6 +35,19 @@ class TestServer(BaseRunner):
         return size
 
     @staticmethod
+    def validateFlags(packet, expFlags):
+        if not expFlags:
+            return True
+
+        missingFlags = ''.join(
+            filter(lambda f: f not in packet.sprintf("%TCP.flags%"), expFlags)
+        )
+        if missingFlags:
+            return False
+
+        return True
+
+    @staticmethod
     def validatePacket(packet, 
                        expPayload: Optional[bytes] = None, 
                        expFlags: Optional[str] = None):
@@ -45,24 +58,23 @@ class TestServer(BaseRunner):
             logging.warn("packet contained incorrect bytes")
             raise UserException(f"Invalid data received: '{payload}'")
 
-        if expFlags:
-            missingFlags = ''.join(
-                filter(lambda f: f not in packet.sprintf("%TCP.flags%"),
-                       expFlags.split(''))
-            )
-            if missingFlags:
-                logging.warn("packet contained incorrect flags")
-                raise UserException(f"Flags are missing: {missingFlags}")
+        if TestServer.validateFlags(packet, expFlags):
+            logging.warn("packet contained incorrect flags")
+            raise UserException(f"Flags are missing")
 
         logging.info("received packet passed validations")
 
-    def _sniff(self, numPackets: int, timeout: Optional[int] = None):
+    def _sniff(self, numPackets: int, expFlags: Optional[str], timeout: Optional[int] = None):
         queue = []
         logging.info("Starting sniffing..")
+        
+        pktFilter = lambda pkt: TCP in pkt and \
+                                pkt.dport == self.sport and \
+                                TestServer.validateFlags(pkt, expFlags)
         sniff(count=numPackets,
               store=False,
-              lfilter=lambda pkt: TCP in pkt and \
-                                  pkt.dport == self.sport,
+              iface="enp3s0",
+              lfilter=pktFilter,
               prn=lambda p: queue.append(p),
               timeout=timeout)
 
@@ -72,18 +84,18 @@ class TestServer(BaseRunner):
         send(packet)
         self.seq += TestServer.packetLength(packet)
 
-    def recv(self, timeout: Optional[int] = None):
-        packets = self._sniff(1, timeout)
+    def recv(self, expFlags: Optional[str] = None, timeout: Optional[int] = None):
+        packets = self._sniff(1, expFlags=expFlags, timeout=timeout)
         if not packets:
             return None
         [packet] = packets
         self.ack = packet.seq + TestServer.packetLength(packet)
         return packet
 
-    def sr(self, packet):
+    def sr(self, packet, expFlags: Optional[str] = None):
         self.send(packet)
         logging.info('first packet sent')
-        ret = self.recv(TIMEOUT)
+        ret = self.recv(expFlags=expFlags, timeout=TIMEOUT)
         logging.info('packet received')
 
         if not ret:
@@ -120,8 +132,9 @@ class TestServer(BaseRunner):
 
         self.sport = parameters.srcPort
         packet = self.recv()
-        self._ip = IP(dst=packet.src)
-        logging.info(f"Packet received")
+
+        logging.info(f"Packet received from {packet[IP].src}")
+        self._ip = IP(dst=packet[IP].src)
 
         flags = packet.sprintf("%TCP.flags%")
         if "S" not in flags:
@@ -146,13 +159,7 @@ class TestServer(BaseRunner):
         syn = self.makePacket(flags="S")
 
         logging.info("sending first syn")
-        synack = self.sr(syn)
-        logging.info("received response")
-
-        synackFlags = synack.sprintf("%TCP.flags%")
-        if "S" not in synackFlags or "A" not in synackFlags:
-            raise UserException(f"Invalid flags received: expected 'SA' got {synackFlags}")
-
+        synack = self.sr(syn, expFlags="SA")
         logging.info("response is syn/ack")
 
         ack = self.makePacket(flags="A")
@@ -191,7 +198,7 @@ class TestServer(BaseRunner):
     def handleReceiveCommand(self, parameters: ReceiveParameters):
         logging.info(f"Receiving packet with expected flags: {parameters.flags}")
 
-        packet = self.recv(timeout=parameters.timeout)
+        packet = self.recv(expFlags=parameters.flags, timeout=parameters.timeout)
         logging.info("Sniffing finished")
 
         if not packet:
@@ -221,12 +228,12 @@ class TestServer(BaseRunner):
         )
         logging.info("Created packet")
 
-        ret = self.sr(pkt)
+        ret = self.sr(pkt, expFlags=parameters.receiveParameters.flags)
         logging.info("SR completed")
 
-        # TestServer.validatePacket(ret, 
-        #                           parameters.receiveParameters.bytes, 
-        #                           parameters.receiveParameters.flags)
+        TestServer.validatePacket(ret, 
+                                  parameters.receiveParameters.bytes, 
+                                  parameters.receiveParameters.flags)
         
         return self.makeResult(ResultParameters(
             status=0,

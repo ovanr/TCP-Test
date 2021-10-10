@@ -8,7 +8,7 @@ from testServer import TestServer
 from typing import cast
 
 async def runner(server: TestServer):
-    async with websockets.connect("ws://localhost:8765/server") as websocket: #type: ignore
+    async with websockets.connect("ws://192.168.92.112:8765/server") as websocket: #type: ignore
         while True: 
             cmd = cast(TestCommand, jsonpickle.decode(await websocket.recv()))
             result = server.executeCommand(cmd)
