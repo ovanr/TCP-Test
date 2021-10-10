@@ -34,10 +34,25 @@ class SUT(BaseRunner):
                 raise someException
 
     def handleConnectCommand(self, parameters: ConnectParameters):
+        logging.info(f"Attempting to connect to {parameters.dstPort}")
+        
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind(("", parameters.srcPort))
+        logging.info("bind successful")
+
+        self.socket.connect((parameters.destination, parameters.dstPort))
+        logging.info("connection successful")
+
+        return self.makeResult(ResultParameters(
+            status=0,
+            operation=CommandType["CONNECT"]
+        ))
+
+    def handleListenCommand(self, parameters: ListenParameters):
         logging.info(f"starting socket on {parameters.srcPort}")
         
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind((parameters.destination, parameters.srcPort))
+        self.socket.bind(("", parameters.srcPort))
         self.socket.listen(1)
 
         logging.info("bind and listen successful")
@@ -48,17 +63,18 @@ class SUT(BaseRunner):
 
         return self.makeResult(ResultParameters(
             status=0,
-            operation=CommandType["CONNECT"]
+            operation=CommandType["LISTEN"]
         ))
 
     def handleSendCommand(self, parameters: SendParameters):
         logging.info("sending packet to client")
-        self.clientSocket.send(parameters.bytes)
+        numBytes = self.clientSocket.send(parameters.bytes or b"")
         logging.warn("sending completed")
 
         return self.makeResult(ResultParameters(
             status=0,
             operation=CommandType["SEND"],
+            description=f"Send {numBytes} bytes"
         ))
 
     def handleReceiveCommand(self, parameters: ReceiveParameters):
@@ -76,7 +92,8 @@ class SUT(BaseRunner):
         logging.info("receive completed")
         return self.makeResult(ResultParameters(
             status=0,
-            operation=CommandType["RECEIVE"]
+            operation=CommandType["RECEIVE"],
+            description=f"Received this payload: '{payload}'"
         ))
 
 

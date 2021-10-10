@@ -8,10 +8,12 @@ class UserException(Exception):
 class CommandType(Enum):
     SEND = 0
     RECEIVE = 1
-    CONNECT = 2
-    DISCONNECT = 3
-    ABORT = 4
-    RESULT = 5
+    SENDRECEIVE = 2
+    CONNECT = 3
+    LISTEN = 4
+    DISCONNECT = 5
+    ABORT = 6
+    RESULT = 7
 
 class WithShow:
     def __str__(self):
@@ -24,9 +26,10 @@ class WithShow:
     def __repr__(self):
         return self.__str__()
 
+
 class SendParameters(WithShow):
     def __init__(self, 
-                 bytes: bytes,
+                 bytes: Optional[bytes] = None,
                  sequenceNumber: Optional[int] = None,
                  acknowledgementNumber: Optional[int] = None,
                  flags: Optional[str] = None,
@@ -50,6 +53,13 @@ class ReceiveParameters(WithShow):
         self.bytes = bytes
         self.flags = flags
 
+class SendReceiveParameters(WithShow):
+    def __init__(self,
+                 sendParameters: SendParameters,
+                 receiveParameters: ReceiveParameters):
+        self.sendParameters = sendParameters
+        self.receiveParameters = receiveParameters
+
 class ConnectParameters(WithShow):
     def __init__(self,
                  destination: str,
@@ -59,18 +69,27 @@ class ConnectParameters(WithShow):
         self.dstPort = dstPort
         self.srcPort = srcPort
 
+class ListenParameters(WithShow):
+    def __init__(self, interface: str, srcPort: int):
+        self.interface = interface
+        self.srcPort = srcPort
+
 class ResultParameters(WithShow):
     def __init__(self,
                  status: int,
                  operation: CommandType,
+                 description: Optional[str] = None,
                  errorMessage: Optional[str] = None):
         self.status = status
         self.operation = operation
         self.errorMessage = errorMessage
+        self.description = description
 
 Parameters = Union[SendParameters, 
                    ReceiveParameters, 
+                   SendReceiveParameters,
                    ConnectParameters, 
+                   ListenParameters,
                    ResultParameters, 
                    None]
 
