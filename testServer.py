@@ -27,8 +27,8 @@ class TestServer(BaseRunner):
     @staticmethod
     def packetLength(packet):
         size = 0
-        if hasattr(packet, "load"):
-            size = len(packet.load)
+        if Raw in packet:
+            size = len(packet[Raw].load)
         for f in ["F", "S"]:
             if f in packet.sprintf("%TCP.flags%"):
                 size += 1
