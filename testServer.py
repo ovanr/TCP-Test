@@ -89,6 +89,7 @@ class TestServer(BaseRunner):
         if not packets:
             return None
         [packet] = packets
+        logging.info(f"Calculated packet length as {TestServer.packetLength(packet)}")
         self.ack = packet.seq + TestServer.packetLength(packet)
         return packet
 
