@@ -64,10 +64,12 @@ class ConnectParameters(WithShow):
     def __init__(self,
                  destination: str,
                  dstPort: int,
-                 srcPort: int):
+                 srcPort: int,
+                 fullHandshake: bool = True):
         self.destination = destination
         self.dstPort = dstPort
         self.srcPort = srcPort
+        self.fullHandshake = fullHandshake
 
 class ListenParameters(WithShow):
     def __init__(self, interface: str, srcPort: int):

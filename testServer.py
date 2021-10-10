@@ -73,7 +73,7 @@ class TestServer(BaseRunner):
                                 TestServer.validateFlags(pkt, expFlags)
         sniff(count=numPackets,
               store=False,
-              iface="enp3s0",
+              iface="enp4s0",
               lfilter=pktFilter,
               prn=lambda p: queue.append(p),
               timeout=timeout)
@@ -158,6 +158,14 @@ class TestServer(BaseRunner):
         self.dport = parameters.dstPort
 
         syn = self.makePacket(flags="S")
+
+        if not parameters.fullHandshake:
+            self.send(syn)
+            logging.info("single syn sent")
+            return self.makeResult(ResultParameters(
+                status=0,
+                operation=CommandType["CONNECT"]
+            ))
 
         logging.info("sending first syn")
         synack = self.sr(syn, expFlags="SA")
