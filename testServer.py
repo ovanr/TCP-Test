@@ -52,7 +52,7 @@ class TestServer(BaseRunner):
                        expPayload: Optional[bytes] = None, 
                        expFlags: Optional[str] = None):
 
-        payload = packet if hasattr(packet, 'load') else b''
+        payload = packet[Raw].load if Raw in packet else b''
 
         if (expPayload and expPayload != payload):
             logging.warn("packet contained incorrect bytes")
