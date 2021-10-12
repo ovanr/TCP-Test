@@ -35,17 +35,13 @@ class TestServer(BaseRunner):
         return size
 
     @staticmethod
-    def validateFlags(packet, expFlags):
+    def missingFlags(packet, expFlags):
         if not expFlags:
-            return True
+            return []
 
-        missingFlags = ''.join(
-            filter(lambda f: f not in packet.sprintf("%TCP.flags%"), expFlags)
-        )
-        if missingFlags:
-            return False
+        missingFlags = filter(lambda f: f not in packet.sprintf("%TCP.flags%"), expFlags)
 
-        return True
+        return list(missingFlags)
 
     @staticmethod
     def validatePacket(packet, 
@@ -58,9 +54,10 @@ class TestServer(BaseRunner):
             logging.warn("packet contained incorrect bytes")
             raise UserException(f"Invalid data received: '{payload}'")
 
-        if TestServer.validateFlags(packet, expFlags):
+        missingFlags = TestServer.missingFlags(packet, expFlags)
+        if len(missingFlags):
             logging.warn("packet contained incorrect flags")
-            raise UserException(f"Flags are missing")
+            raise UserException(f"Flags are missing {''.join(missingFlags)}")
 
         logging.info("received packet passed validations")
 
@@ -70,7 +67,7 @@ class TestServer(BaseRunner):
         
         pktFilter = lambda pkt: TCP in pkt and \
                                 pkt.dport == self.sport and \
-                                TestServer.validateFlags(pkt, expFlags)
+                                len(TestServer.missingFlags(pkt, expFlags)) == 0
         sniff(count=numPackets,
               store=False,
               iface="enp4s0",
@@ -214,7 +211,7 @@ class TestServer(BaseRunner):
             logging.warn("no packet received due to timeout")
             raise UserException("Timeout reached")
 
-        TestServer.validatePacket(packet, parameters.bytes, parameters.flags)
+        TestServer.validatePacket(packet, parameters.bytes)
 
         return self.makeResult(ResultParameters(
             status=0,
