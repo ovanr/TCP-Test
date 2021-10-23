@@ -35,13 +35,13 @@ class BaseRunner(ABC):
                 operation=cmd.commandType,
                 errorMessage=str(e)
             ))
-        # except Exception as e:
-        #     logging.warn("Command ended with error.")
-        #     return self.makeResult(ResultParameters(
-        #         status=2,
-        #         operation=cmd.commandType,
-        #         errorMessage=str(e)
-        #     ))
+        except Exception as e:
+            logging.warn("Command ended with error.")
+            return self.makeResult(ResultParameters(
+                status=2,
+                operation=cmd.commandType,
+                errorMessage=str(e)
+            ))
 
 
     def makeResult(self, params: ResultParameters):
