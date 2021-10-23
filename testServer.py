@@ -3,6 +3,7 @@
 from scapy.packet import Raw
 from scapy.layers.inet import IP, TCP
 from scapy.sendrecv import send, sniff
+from config import TEST_SERVER_INTERFACE
 from random import randint
 from baseRunner import BaseRunner
 import logging
@@ -70,7 +71,7 @@ class TestServer(BaseRunner):
                                 len(TestServer.missingFlags(pkt, expFlags)) == 0
         sniff(count=numPackets,
               store=False,
-              iface="enp4s0",
+              iface=TEST_SERVER_INTERFACE,
               lfilter=pktFilter,
               prn=lambda p: queue.append(p),
               timeout=timeout)

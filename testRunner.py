@@ -3,6 +3,7 @@
 import asyncio
 import websockets
 import jsonpickle
+from config import TEST_RUNNER_PORT
 from threading import Thread
 
 serverQueue = []
@@ -25,7 +26,7 @@ async def router(websocket, path):
         await thread(sutQueue, websocket)
 
 async def main():
-    async with websockets.serve(router, "192.168.92.112", 8765): #type: ignore
+    async with websockets.serve(router, "", TEST_RUNNER_PORT): #type: ignore
         await asyncio.Future()  # run forever
 
 task = Thread(target=lambda: asyncio.run(main()))
