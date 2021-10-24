@@ -34,9 +34,6 @@ class SendParameters(WithShow):
     sequenceNumber: Optional[int] = None
     acknowledgementNumber: Optional[int] = None
     flags: Optional[str] = None
-    windowSize: Optional[int] = None
-    checksum: Optional[int] = None
-    urgentPointer: Optional[int] = None
 
 @dataclass
 class ReceiveParameters(WithShow):

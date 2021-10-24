@@ -90,7 +90,6 @@ disable=raw-checker-failed,
         missing-function-docstring,
         missing-module-docstring,
         broad-except,
-        too-many-arguments
 
 
 # Enable the message, report, category or checker with the given id(s). You can

@@ -2,7 +2,7 @@
 
 import logging
 from random import randint
-from typing import Optional, cast
+from typing import Optional
 
 from scapy.layers.inet import IP, TCP
 from scapy.packet import Packet, Raw
@@ -125,19 +125,13 @@ class TestServer(BaseRunner):
                    payload: Optional[bytes] = None,
                    seq: Optional[int] = None,
                    ack: Optional[int] = None,
-                   flags: Optional[str] = None,
-                   window: Optional[int] = None,
-                   chksum: Optional[int] = None,
-                   urgentPointer: Optional[int] = None):
+                   flags: Optional[str] = None):
 
         pkt = self.ip / TCP(sport=self.sport,
                             dport=self.dport,
                             seq=(self.seq if seq is None else seq),
                             ack=(self.ack if ack is None else ack),
-                            flags=(flags or ""),
-                            window=(8192 if window is None else window),
-                            chksum=chksum,
-                            urgptr=(urgentPointer or 0))
+                            flags=(flags or ""))
         if payload:
             pkt = pkt / Raw(load=payload)
 
@@ -148,7 +142,10 @@ class TestServer(BaseRunner):
         self.reset()
 
         self.sport = parameters.srcPort
-        packet = cast(Packet, self.recv())
+        packet = self.recv()
+
+        if not packet:
+            raise UserException("Listen timed out")
 
         logging.info("Packet received from %s", packet[IP].src)
         self.ip = IP(dst=packet[IP].src)
@@ -205,10 +202,7 @@ class TestServer(BaseRunner):
             payload=parameters.payload,
             seq=parameters.sequenceNumber,
             ack=parameters.acknowledgementNumber,
-            flags=parameters.flags,
-            window=parameters.windowSize,
-            chksum=parameters.checksum,
-            urgentPointer=parameters.urgentPointer,
+            flags=parameters.flags
         )
 
         self.send(pkt)
@@ -246,10 +240,7 @@ class TestServer(BaseRunner):
             payload=sendParams.payload,
             seq=sendParams.sequenceNumber,
             ack=sendParams.acknowledgementNumber,
-            flags=sendParams.flags,
-            window=sendParams.windowSize,
-            chksum=sendParams.checksum,
-            urgentPointer=sendParams.urgentPointer,
+            flags=sendParams.flags
         )
         logging.info("Created packet")
 
@@ -268,13 +259,8 @@ class TestServer(BaseRunner):
         logging.info("graceful disconnect from client")
 
         fin = self.makePacket(flags="FA")
-        finack = self.sr(fin)
+        finack = self.sr(fin, expFlags="FA")
         logging.info("send fin packet")
-
-        finackFlags = finack.sprint("%TCP.flags%")
-        if "F" not in finackFlags or "A" not in finackFlags:
-            logging.warning("response did not contain FA")
-            raise UserException(f"Invalid flags received: expected 'FA' got {finackFlags}")
 
         logging.info("sending ack")
         ack = self.makePacket(flags="A")
