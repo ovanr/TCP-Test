@@ -1,16 +1,29 @@
-from testCommand import *
-from baseRunner import BaseRunner
-import socket
 import logging
+import socket
+
+from baseRunner import BaseRunner
+from testCommand import (
+    CommandType,
+    ConnectParameters,
+    ListenParameters,
+    ReceiveParameters,
+    ResultParameters,
+    SendReceiveParameters,
+    SendParameters,
+    UserException,
+)
 
 MAX_READ_SIZE = 4096 # in bytes
 
 class SUT(BaseRunner):
     def __init__(self):
-        self.testNumber = -1
+        super().__init__()
 
         logging.getLogger("").setLevel(logging.INFO)
         logging.info("sut started")
+
+        self.clientSocket = None
+        self.socket = None
 
     def reset(self):
         if not hasattr(self, "clientSocket"):
@@ -19,13 +32,15 @@ class SUT(BaseRunner):
         someException = None
 
         try:
-            self.clientSocket.close()
-        except Exception as e1:
-            someException = e1
+            if self.clientSocket:
+                self.clientSocket.close()
+        except Exception as exception:
+            someException = exception
             try:
-                self.socket.close()
-            except Exception as e2:
-                someException = e2
+                if self.socket:
+                    self.socket.close()
+            except Exception as otherException:
+                someException = otherException
         finally:
             self.socket = None
             self.clientSocket = None
@@ -34,8 +49,8 @@ class SUT(BaseRunner):
                 raise someException
 
     def handleConnectCommand(self, parameters: ConnectParameters):
-        logging.info(f"Attempting to connect to {parameters.dstPort}")
-        
+        logging.info("Attempting to connect to %s", parameters.dstPort)
+
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(("", parameters.srcPort))
         logging.info("bind successful")
@@ -49,8 +64,8 @@ class SUT(BaseRunner):
         ))
 
     def handleListenCommand(self, parameters: ListenParameters):
-        logging.info(f"starting socket on {parameters.srcPort}")
-        
+        logging.info("starting socket on %s", parameters.srcPort)
+
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind(("", parameters.srcPort))
         self.socket.listen(1)
@@ -68,8 +83,11 @@ class SUT(BaseRunner):
 
     def handleSendCommand(self, parameters: SendParameters):
         logging.info("sending packet to client")
+        if not self.clientSocket:
+            raise UserException("Not initialized yet")
+
         numBytes = self.clientSocket.send(parameters.bytes or b"")
-        logging.warn("sending completed")
+        logging.warning("sending completed")
 
         return self.makeResult(ResultParameters(
             status=0,
@@ -79,6 +97,8 @@ class SUT(BaseRunner):
 
     def handleReceiveCommand(self, parameters: ReceiveParameters):
         logging.info("receiving packet from client")
+        if not self.clientSocket:
+            raise UserException("Not initialized yet")
 
         self.clientSocket.settimeout(parameters.timeout)
         payload = self.clientSocket.recv(MAX_READ_SIZE)
@@ -86,7 +106,7 @@ class SUT(BaseRunner):
         # cannot check TCP flags
         # so only check for the data sent
         if (parameters.bytes and parameters.bytes != payload):
-            logging.warn("incorrect bytes received")
+            logging.warning("incorrect bytes received")
             raise UserException(f"Invalid data received: '{payload}'")
 
         logging.info("receive completed")
@@ -96,6 +116,8 @@ class SUT(BaseRunner):
             description=f"Received this payload: '{payload}'"
         ))
 
+    def handleSendReceiveCommand(self, parameters: SendReceiveParameters):
+        raise UserException("Unimplemented")
 
     def handleDisconnectCommand(self):
         logging.info("disconnecting from client")

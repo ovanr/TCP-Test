@@ -1,76 +1,110 @@
-
-from abc import ABC
-from testCommand import *
-from typing import cast
+from abc import ABC, abstractmethod
 import logging
+from typing import cast
+
+from testCommand import (
+    CommandType,
+    ConnectParameters,
+    ListenParameters,
+    ReceiveParameters,
+    ResultParameters,
+    SendParameters,
+    SendReceiveParameters,
+    UserException,
+    TestCommand
+)
 
 class BaseRunner(ABC):
+    def __init__(self):
+        self.testNumber = -1
+
     def executeCommand(self, cmd: TestCommand):
-        if (cmd.testNumber != self.testNumber):
+        if cmd.testNumber != self.testNumber:
             self.testNumber = cmd.testNumber
             try:
                 self.reset()
             except Exception:
                 pass
 
+        result = None
         try:
             if cmd.commandType == CommandType["LISTEN"]:
-                return self.handleListenCommand(cast(ListenParameters, cmd.commandParameters))
+                result = self.handleListenCommand(
+                    cast(ListenParameters, cmd.commandParameters)
+                )
             elif cmd.commandType == CommandType["CONNECT"]:
-                return self.handleConnectCommand(cast(ConnectParameters, cmd.commandParameters))
+                result = self.handleConnectCommand(
+                    cast(ConnectParameters, cmd.commandParameters)
+                )
             elif cmd.commandType == CommandType["SEND"]:
-                return self.handleSendCommand(cast(SendParameters, cmd.commandParameters))
+                result = self.handleSendCommand(
+                    cast(SendParameters, cmd.commandParameters)
+                )
             elif cmd.commandType == CommandType["RECEIVE"]:
-                return self.handleReceiveCommand(cast(ReceiveParameters, cmd.commandParameters))
+                result = self.handleReceiveCommand(
+                    cast(ReceiveParameters, cmd.commandParameters)
+                )
             elif cmd.commandType == CommandType["SENDRECEIVE"]:
-                return self.handleSendReceiveCommand(cast(SendReceiveParameters, cmd.commandParameters))
+                result = self.handleSendReceiveCommand(
+                    cast(SendReceiveParameters, cmd.commandParameters)
+                )
             elif cmd.commandType == CommandType["DISCONNECT"]:
-                return self.handleDisconnectCommand()
+                result = self.handleDisconnectCommand()
             elif cmd.commandType == CommandType["ABORT"]:
-                return self.handleAbortCommand()
-        except UserException as e:
-            logging.warn("Command ended with error.")
-            return self.makeResult(ResultParameters(
+                result = self.handleAbortCommand()
+        except UserException as exception:
+            logging.warning("Command ended with error.")
+            result = self.makeResult(ResultParameters(
                 status=1,
                 operation=cmd.commandType,
-                errorMessage=str(e)
+                errorMessage=str(exception)
             ))
-        except Exception as e:
-            logging.warn("Command ended with error.")
-            return self.makeResult(ResultParameters(
+        except Exception as exception:
+            logging.warning("Command ended with error.")
+            result = self.makeResult(ResultParameters(
                 status=2,
                 operation=cmd.commandType,
-                errorMessage=str(e)
+                errorMessage=str(exception)
             ))
+
+        return result
 
 
     def makeResult(self, params: ResultParameters):
         return TestCommand(
-            testNumber=self.testNumber, 
+            testNumber=self.testNumber,
             commandType=CommandType["RESULT"],
             commandParameters=params
         )
 
+    @abstractmethod
     def reset(self):
         pass
 
+    @abstractmethod
     def handleListenCommand(self, parameters: ListenParameters):
         pass
 
+    @abstractmethod
     def handleConnectCommand(self, parameters: ConnectParameters):
         pass
 
+    @abstractmethod
     def handleSendReceiveCommand(self, parameters: SendReceiveParameters):
         pass
 
+    @abstractmethod
     def handleReceiveCommand(self, parameters: ReceiveParameters):
         pass
 
+    @abstractmethod
     def handleSendCommand(self, parameters: SendParameters):
         pass
 
+    @abstractmethod
     def handleDisconnectCommand(self):
         pass
 
+    @abstractmethod
     def handleAbortCommand(self):
         pass

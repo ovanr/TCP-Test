@@ -1,6 +1,6 @@
+from copy import deepcopy
 from enum import Enum
 from typing import Optional, Union
-from copy import deepcopy
 
 class UserException(Exception):
     pass
@@ -28,7 +28,7 @@ class WithShow:
 
 
 class SendParameters(WithShow):
-    def __init__(self, 
+    def __init__(self,
                  bytes: Optional[bytes] = None,
                  sequenceNumber: Optional[int] = None,
                  acknowledgementNumber: Optional[int] = None,
@@ -87,18 +87,18 @@ class ResultParameters(WithShow):
         self.errorMessage = errorMessage
         self.description = description
 
-Parameters = Union[SendParameters, 
-                   ReceiveParameters, 
+Parameters = Union[SendParameters,
+                   ReceiveParameters,
                    SendReceiveParameters,
-                   ConnectParameters, 
+                   ConnectParameters,
                    ListenParameters,
-                   ResultParameters, 
+                   ResultParameters,
                    None]
 
 class TestCommand(WithShow):
-    def __init__(self, 
-                 testNumber: int, 
-                 commandType: CommandType, 
+    def __init__(self,
+                 testNumber: int,
+                 commandType: CommandType,
                  commandParameters: Parameters = None,
                  timestamp: Optional[int] = None):
         self.testNumber = testNumber

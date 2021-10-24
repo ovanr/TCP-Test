@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import asyncio
-import websockets
-import jsonpickle
-from config import TEST_RUNNER_PORT
 from threading import Thread
+
+import jsonpickle
+import websockets
+
+from config import TEST_RUNNER_PORT
 
 serverQueue = []
 sutQueue = []
@@ -26,6 +28,7 @@ async def router(websocket, path):
         await thread(sutQueue, websocket)
 
 async def main():
+    #pylint: disable=no-member
     async with websockets.serve(router, "", TEST_RUNNER_PORT): #type: ignore
         await asyncio.Future()  # run forever
 
