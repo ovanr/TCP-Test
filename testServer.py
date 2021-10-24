@@ -10,7 +10,6 @@ from scapy.sendrecv import send, sniff
 
 from baseRunner import BaseRunner
 from config import TEST_SERVER_INTERFACE
-#pylint: disable=duplicate-code
 from testCommand import (
     CommandType,
     ConnectParameters,

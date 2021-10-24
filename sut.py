@@ -2,7 +2,6 @@ import logging
 import socket
 
 from baseRunner import BaseRunner
-#pylint: disable=duplicate-code
 from testCommand import (
     CommandType,
     ConnectParameters,
