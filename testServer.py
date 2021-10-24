@@ -10,6 +10,7 @@ from scapy.sendrecv import send, sniff
 
 from baseRunner import BaseRunner
 from config import TEST_SERVER_INTERFACE
+#pylint: disable=duplicate-code
 from testCommand import (
     CommandType,
     ConnectParameters,
@@ -202,7 +203,7 @@ class TestServer(BaseRunner):
         logging.info("Sending packet with flags: %s", parameters.flags)
 
         pkt = self.makePacket(
-            payload=parameters.bytes,
+            payload=parameters.payload,
             seq=parameters.sequenceNumber,
             ack=parameters.acknowledgementNumber,
             flags=parameters.flags,
@@ -217,7 +218,7 @@ class TestServer(BaseRunner):
         return self.makeResult(ResultParameters(
             status=0,
             operation=CommandType["SEND"],
-            description=f"Sent this payload: {parameters.bytes}"
+            description=f"Sent this payload: {parameters.payload}"
         ))
 
     def handleReceiveCommand(self, parameters: ReceiveParameters):
@@ -230,7 +231,7 @@ class TestServer(BaseRunner):
             logging.warning("no packet received due to timeout")
             raise UserException("Timeout reached")
 
-        TestServer.validatePayload(packet, parameters.bytes)
+        TestServer.validatePayload(packet, parameters.payload)
 
         return self.makeResult(ResultParameters(
             status=0,
@@ -243,7 +244,7 @@ class TestServer(BaseRunner):
         logging.info("Sending packet with flags: %s", sendParams.flags)
 
         pkt = self.makePacket(
-            payload=sendParams.bytes,
+            payload=sendParams.payload,
             seq=sendParams.sequenceNumber,
             ack=sendParams.acknowledgementNumber,
             flags=sendParams.flags,
@@ -256,7 +257,7 @@ class TestServer(BaseRunner):
         ret = self.sr(pkt, expFlags=parameters.receiveParameters.flags)
         logging.info("SR completed")
 
-        TestServer.validatePayload(ret, parameters.receiveParameters.bytes)
+        TestServer.validatePayload(ret, parameters.receiveParameters.payload)
 
         return self.makeResult(ResultParameters(
             status=0,

@@ -2,6 +2,7 @@ import logging
 import socket
 
 from baseRunner import BaseRunner
+#pylint: disable=duplicate-code
 from testCommand import (
     CommandType,
     ConnectParameters,
@@ -86,7 +87,7 @@ class SUT(BaseRunner):
         if not self.clientSocket:
             raise UserException("Not initialized yet")
 
-        numBytes = self.clientSocket.send(parameters.bytes or b"")
+        numBytes = self.clientSocket.send(parameters.payload or b"")
         logging.warning("sending completed")
 
         return self.makeResult(ResultParameters(
@@ -105,7 +106,7 @@ class SUT(BaseRunner):
 
         # cannot check TCP flags
         # so only check for the data sent
-        if (parameters.bytes and parameters.bytes != payload):
+        if (parameters.payload and parameters.payload != payload):
             logging.warning("incorrect bytes received")
             raise UserException(f"Invalid data received: '{payload}'")
 

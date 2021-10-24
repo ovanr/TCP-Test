@@ -1,6 +1,7 @@
 from copy import deepcopy
 from enum import Enum
 from typing import Optional, Union
+from dataclasses import dataclass
 
 class UserException(Exception):
     pass
@@ -27,65 +28,45 @@ class WithShow:
         return self.__str__()
 
 
+@dataclass
 class SendParameters(WithShow):
-    def __init__(self,
-                 bytes: Optional[bytes] = None,
-                 sequenceNumber: Optional[int] = None,
-                 acknowledgementNumber: Optional[int] = None,
-                 flags: Optional[str] = None,
-                 windowSize: Optional[int] = None,
-                 checksum: Optional[int] = None,
-                 urgentPointer: Optional[int] = None):
-        self.bytes = bytes
-        self.sequenceNumber = sequenceNumber
-        self.acknowledgementNumber = acknowledgementNumber
-        self.flags = flags
-        self.windowSize = windowSize
-        self.checksum = checksum
-        self.urgentPointer = urgentPointer
+    payload: Optional[bytes] = None
+    sequenceNumber: Optional[int] = None
+    acknowledgementNumber: Optional[int] = None
+    flags: Optional[str] = None
+    windowSize: Optional[int] = None
+    checksum: Optional[int] = None
+    urgentPointer: Optional[int] = None
 
+@dataclass
 class ReceiveParameters(WithShow):
-    def __init__(self,
-                 timeout: int,
-                 bytes: Optional[bytes] = None,
-                 flags: Optional[str] = None):
-        self.timeout = timeout
-        self.bytes = bytes
-        self.flags = flags
+    timeout: int
+    payload: Optional[bytes] = None
+    flags: Optional[str] = None
 
+@dataclass
 class SendReceiveParameters(WithShow):
-    def __init__(self,
-                 sendParameters: SendParameters,
-                 receiveParameters: ReceiveParameters):
-        self.sendParameters = sendParameters
-        self.receiveParameters = receiveParameters
+    sendParameters: SendParameters
+    receiveParameters: ReceiveParameters
 
+@dataclass
 class ConnectParameters(WithShow):
-    def __init__(self,
-                 destination: str,
-                 dstPort: int,
-                 srcPort: int,
-                 fullHandshake: bool = True):
-        self.destination = destination
-        self.dstPort = dstPort
-        self.srcPort = srcPort
-        self.fullHandshake = fullHandshake
+    destination: str
+    dstPort: int
+    srcPort: int
+    fullHandshake: bool = True
 
+@dataclass
 class ListenParameters(WithShow):
-    def __init__(self, interface: str, srcPort: int):
-        self.interface = interface
-        self.srcPort = srcPort
+    interface: str
+    srcPort: int
 
+@dataclass
 class ResultParameters(WithShow):
-    def __init__(self,
-                 status: int,
-                 operation: CommandType,
-                 description: Optional[str] = None,
-                 errorMessage: Optional[str] = None):
-        self.status = status
-        self.operation = operation
-        self.errorMessage = errorMessage
-        self.description = description
+    status: int
+    operation: CommandType
+    description: Optional[str] = None
+    errorMessage: Optional[str] = None
 
 Parameters = Union[SendParameters,
                    ReceiveParameters,
@@ -95,13 +76,9 @@ Parameters = Union[SendParameters,
                    ResultParameters,
                    None]
 
+@dataclass
 class TestCommand(WithShow):
-    def __init__(self,
-                 testNumber: int,
-                 commandType: CommandType,
-                 commandParameters: Parameters = None,
-                 timestamp: Optional[int] = None):
-        self.testNumber = testNumber
-        self.commandType = commandType
-        self.commandParameters = commandParameters
-        self.timestamp = timestamp
+    testNumber: int
+    commandType: CommandType
+    commandParameters: Parameters = None
+    timestamp: Optional[int] = None
