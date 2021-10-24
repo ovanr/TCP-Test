@@ -3,6 +3,7 @@ from typing import List
 
 import asyncio
 from threading import Thread
+from logging import debug
 
 import jsonpickle
 import websockets
@@ -12,58 +13,92 @@ from config import TEST_RUNNER_PORT
 
 
 class TestRunner:
-    __serverQueue = []
-    __sutQueue = []
+    _serverQueue = []
+    _sutQueue = []
+
+    _finish_event = asyncio.Event()
+
+    _sut_start_event = asyncio.Event()
+    _sut_finished_event = asyncio.Event()
+
+    _ts_start_event = asyncio.Event()
+    _ts_finished_event = asyncio.Event()
+
+    _task = None
 
     @property
     def server_queue(self) -> List[TestCommand]:
-        return self.__serverQueue
+        return self._serverQueue
 
     @server_queue.setter
     def server_queue(self, queue: List[TestCommand]):
-        self.__serverQueue.append(queue)
+        self._serverQueue.append(queue)
 
     @property
     def sut_queue(self) -> List[TestCommand]:
-        return self.__sutQueue
+        return self._sutQueue
 
     @sut_queue.setter
     def sut_queue(self, queue: List[TestCommand]):
-        self.__sutQueue.append(queue)
+        self._sutQueue.append(queue)
 
-    def run(self):
-        pass
+    @staticmethod
+    async def connected_element_thread(queue, websocket, start_event: asyncio.Event, finished_event: asyncio.Event):
+        while True:
+            await start_event.wait()
+            start_event.clear()
+            while len(queue) != 0:
+                cmd = queue.pop(0)
+                await websocket.send(jsonpickle.encode(cmd))
+                print(jsonpickle.decode(await websocket.recv()))
+            finished_event.set()
+
+    async def run(self):
+        self._sut_start_event.set()
+        self._ts_start_event.set()
+
+        await self._sut_finished_event.wait()
+        self._sut_finished_event.clear()
+
+        await self._ts_finished_event.wait()
+        self._ts_finished_event.clear()
 
     def cleanup(self):
+        debug("Cleanup! This currently does nothing.")
         pass
 
+    def start_runner(self):
+        async def router(websocket, path):
+            if path == '/server':
+                await self.connected_element_thread(
+                    self._serverQueue,
+                    websocket,
+                    self._ts_start_event,
+                    self._ts_finished_event)
+            elif path == '/sut':
+                await self.connected_element_thread(
+                    self._sutQueue,
+                    websocket,
+                    self._sut_start_event,
+                    self._sut_finished_event
+                )
 
-serverQueue = []
-sutQueue = []
+        async def task_main():
+            # pylint: disable=no-member
+            async with websockets.serve(router, "", TEST_RUNNER_PORT):  # type: ignore
+                await self._finish_event.wait()  # run forever
+
+        self._task = Thread(target=lambda: asyncio.run(task_main()))
+        self._task.start()
+
+    def finish_runner(self):
+        self._finish_event.set()
+        self._task.join()
 
 
-async def thread(queue, websocket):
-    while True:
-        if len(queue) == 0:
-            await asyncio.sleep(1)
-            continue
+test_runner = TestRunner()
+test_runner.start_runner()
 
-        cmd = queue.pop(0)
-        await websocket.send(jsonpickle.encode(cmd))
-        print(jsonpickle.decode(await websocket.recv()))
+asyncio.run(test_runner.run())
 
-
-async def router(websocket, path):
-    if path == '/server':
-        await thread(serverQueue, websocket)
-    elif path == '/sut':
-        await thread(sutQueue, websocket)
-
-
-async def main():
-    # pylint: disable=no-member
-    async with websockets.serve(router, "", TEST_RUNNER_PORT):  # type: ignore
-        await asyncio.Future()  # run forever
-
-
-task = Thread(target=lambda: asyncio.run(main()))
+test_runner.finish_runner()
