@@ -11,8 +11,9 @@ from sut import SUT
 from testCommand import TestCommand
 
 async def runner(sut: SUT):
-    #pylint: disable=no-member,line-too-long
-    async with websockets.connect(f"ws://{TEST_RUNNER_IP}:{str(TEST_RUNNER_PORT)}/sut") as websocket: #type: ignore
+    uri = f"ws://{TEST_RUNNER_IP}:{str(TEST_RUNNER_PORT)}/sut"
+    #pylint: disable=no-member
+    async with websockets.connect(uri) as websocket: #type: ignore
         while True:
             cmd = cast(TestCommand, jsonpickle.decode(await websocket.recv()))
             result = sut.executeCommand(cmd)
