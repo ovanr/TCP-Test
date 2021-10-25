@@ -24,6 +24,8 @@ async def thread(queue, websocket):
 
 
 async def router(websocket, path):
+    websocket.ping_timeout = None
+
     if path == '/server':
         await thread(serverQueue, websocket)
     elif path == '/sut':

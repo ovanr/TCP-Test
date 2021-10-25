@@ -15,6 +15,8 @@ async def runner(server: TestServer):
     uri = f"ws://{TEST_RUNNER_IP}:{str(TEST_RUNNER_PORT)}/server"
     # pylint: disable=no-member
     async with websockets.connect(uri) as websocket:  # type: ignore
+        websocket.ping_timeout = None
+
         while True:
             cmd = cast(TestCommand, jsonpickle.decode(await websocket.recv()))
             result = server.execute_command(cmd)
