@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import logging
 from typing import cast
 
-from testCommand import (
+from tcpTester.testCommand import (
     CommandType,
     ConnectParameters,
     ListenParameters,

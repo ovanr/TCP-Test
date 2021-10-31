@@ -8,8 +8,8 @@ from logging import debug
 import jsonpickle
 import websockets
 
-from testCommand import TestCommand
-from config import TEST_RUNNER_PORT
+from tcpTester.testCommand import TestCommand
+from tcpTester.config import TEST_RUNNER_PORT
 
 
 class TestRunner:

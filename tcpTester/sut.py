@@ -1,8 +1,8 @@
 import logging
 import socket
 
-from baseRunner import BaseRunner
-from testCommand import (
+from tcpTester.baseRunner import BaseRunner
+from tcpTester.testCommand import (
     CommandType,
     ConnectParameters,
     ListenParameters,

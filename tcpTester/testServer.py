@@ -8,9 +8,9 @@ from scapy.layers.inet import IP, TCP
 from scapy.packet import Packet, Raw
 from scapy.sendrecv import send, sniff
 
-from baseRunner import BaseRunner
-from config import TEST_SERVER_INTERFACE
-from testCommand import (
+from tcpTester.baseRunner import BaseRunner
+from tcpTester.config import TEST_SERVER_INTERFACE
+from tcpTester.testCommand import (
     CommandType,
     ConnectParameters,
     ListenParameters,
