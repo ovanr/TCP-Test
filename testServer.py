@@ -22,7 +22,8 @@ from testCommand import (
 )
 
 # timeout for the sr1 command (in seconds)
-TIMEOUT=20
+TIMEOUT = 20
+
 
 class TestServer(BaseRunner):
     def __init__(self):
@@ -43,18 +44,18 @@ class TestServer(BaseRunner):
         self.sport = 0
         self.dport = 0
 
-    def updateSequenceNum(self, packet: Packet):
-        self.seq += TestServer.packetLength(packet)
+    def update_sequence_num(self, packet: Packet):
+        self.seq += TestServer.packet_length(packet)
 
-    def updateAckNum(self, packet: Packet):
-        packetAck = packet.seq + TestServer.packetLength(packet)
-        if packetAck > self.ack:
-            self.ack = packetAck
+    def update_ack_num(self, packet: Packet):
+        packet_ack = packet.seq + TestServer.packet_length(packet)
+        if packet_ack > self.ack:
+            self.ack = packet_ack
         else:
-            logging.info("Received packet with duplicate Ack %s", packetAck)
+            logging.info("Received packet with duplicate Ack %s", packet_ack)
 
     @staticmethod
-    def packetLength(packet: Packet):
+    def packet_length(packet: Packet):
         size = 0
         if Raw in packet:
             size = len(packet[Raw].load)
@@ -64,32 +65,32 @@ class TestServer(BaseRunner):
         return size
 
     @staticmethod
-    def missingFlags(packet: Packet, expFlags: Optional[str]):
-        if not expFlags:
+    def missing_flags(packet: Packet, exp_flags: Optional[str]):
+        if not exp_flags:
             return []
 
-        missingFlags = filter(lambda f: f not in packet.sprintf("%TCP.flags%"), expFlags)
+        missing_flags = filter(lambda f: f not in packet.sprintf("%TCP.flags%"), exp_flags)
 
-        return list(missingFlags)
+        return list(missing_flags)
 
     @staticmethod
-    def validatePayload(packet: Packet, expPayload: Optional[bytes] = None):
+    def validate_payload(packet: Packet, exp_payload: Optional[bytes] = None):
         payload = packet[Raw].load if Raw in packet else b''
-        if (expPayload and expPayload != payload):
+        if exp_payload and exp_payload != payload:
             logging.warning("packet contained incorrect bytes")
             raise UserException(f"Invalid data received: '{payload}'")
 
-    def _sniff(self, numPackets: int, expFlags: Optional[str], timeout: Optional[int] = None):
+    def _sniff(self, num_packets: int, exp_flags: Optional[str], timeout: Optional[int] = None):
         queue = []
         logging.info("Starting sniffing..")
 
-        pktFilter = lambda pkt: TCP in pkt and \
-                                pkt.dport == self.sport and \
-                                len(TestServer.missingFlags(pkt, expFlags)) == 0
-        sniff(count=numPackets,
+        def pkt_filter(pkt):
+            return TCP in pkt and pkt.dport == self.sport and len(TestServer.missing_flags(pkt, exp_flags)) == 0
+
+        sniff(count=num_packets,
               store=False,
               iface=TEST_SERVER_INTERFACE,
-              lfilter=pktFilter,
+              lfilter=pkt_filter,
               prn=queue.append,
               timeout=timeout)
 
@@ -97,35 +98,34 @@ class TestServer(BaseRunner):
 
     def send(self, packet: Packet):
         send(packet)
-        self.updateSequenceNum(packet)
+        self.update_sequence_num(packet)
 
-    def recv(self, expFlags: Optional[str] = None, timeout: Optional[int] = None):
-        packets = self._sniff(1, expFlags=expFlags, timeout=timeout)
+    def recv(self, exp_flags: Optional[str] = None, timeout: Optional[int] = None):
+        packets = self._sniff(1, exp_flags=exp_flags, timeout=timeout)
         if not packets:
             return None
         [packet] = packets
-        logging.info("Calculated packet length as %s", TestServer.packetLength(packet))
-        self.updateAckNum(packet)
+        logging.info("Calculated packet length as %s", TestServer.packet_length(packet))
+        self.update_ack_num(packet)
         return packet
 
-
-    def sr(self, packet: Packet, expFlags: Optional[str] = None):
+    def sr(self, packet: Packet, exp_flags: Optional[str] = None):
         self.send(packet)
         logging.info('first packet sent')
-        ret = self.recv(expFlags=expFlags, timeout=TIMEOUT)
+        ret = self.recv(exp_flags=exp_flags, timeout=TIMEOUT)
         logging.info('packet received')
 
         if not ret:
-            logging.info("timeout reached, could not detect packet with flags %s", expFlags)
+            logging.info("timeout reached, could not detect packet with flags %s", exp_flags)
             raise UserException("Got no response to packet")
 
         return ret
 
-    def makePacket(self,
-                   payload: Optional[bytes] = None,
-                   seq: Optional[int] = None,
-                   ack: Optional[int] = None,
-                   flags: Optional[str] = None):
+    def make_packet(self,
+                    payload: Optional[bytes] = None,
+                    seq: Optional[int] = None,
+                    ack: Optional[int] = None,
+                    flags: Optional[str] = None):
 
         pkt = self.ip / TCP(sport=self.sport,
                             dport=self.dport,
@@ -137,11 +137,11 @@ class TestServer(BaseRunner):
 
         return pkt
 
-    def handleListenCommand(self, parameters: ListenParameters):
+    def handle_listen_command(self, parameters: ListenParameters):
         logging.info("Listening for Syn packet")
         self.reset()
 
-        self.sport = parameters.srcPort
+        self.sport = parameters.src_port
         packet = self.recv()
 
         if not packet:
@@ -156,129 +156,129 @@ class TestServer(BaseRunner):
 
         self.dport = packet.sport
 
-        return self.makeResult(ResultParameters(
+        return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["LISTEN"],
             description=f"Packet received: {packet.__repr__()}"
         ))
 
-    def handleConnectCommand(self, parameters: ConnectParameters):
-        logging.info("connecting to %s", parameters.dstPort)
+    def handle_connect_command(self, parameters: ConnectParameters):
+        logging.info("connecting to %s", parameters.dst_port)
         self.reset()
 
         self.ip = IP(dst=parameters.destination)
-        self.sport = parameters.srcPort
-        self.dport = parameters.dstPort
+        self.sport = parameters.src_port
+        self.dport = parameters.dst_port
 
-        syn = self.makePacket(flags="S")
+        syn = self.make_packet(flags="S")
 
-        if not parameters.fullHandshake:
+        if not parameters.full_handshake:
             self.send(syn)
             logging.info("single syn sent")
-            return self.makeResult(ResultParameters(
+            return self.make_result(ResultParameters(
                 status=0,
                 operation=CommandType["CONNECT"]
             ))
 
         logging.info("sending first syn")
-        synack = self.sr(syn, expFlags="SA")
+        synack = self.sr(syn, exp_flags="SA")
         logging.info("response is syn/ack")
 
-        ack = self.makePacket(flags="A")
+        ack = self.make_packet(flags="A")
         send(ack)
 
         logging.info("sent ack")
 
-        return self.makeResult(ResultParameters(
+        return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["CONNECT"],
             description=f"Last Packet received: {synack.__repr__()}"
         ))
 
-    def handleSendCommand(self, parameters: SendParameters):
+    def handle_send_command(self, parameters: SendParameters):
         logging.info("Sending packet with flags: %s", parameters.flags)
 
-        pkt = self.makePacket(
+        pkt = self.make_packet(
             payload=parameters.payload,
-            seq=parameters.sequenceNumber,
-            ack=parameters.acknowledgementNumber,
+            seq=parameters.sequence_number,
+            ack=parameters.acknowledgement_number,
             flags=parameters.flags
         )
 
         self.send(pkt)
         logging.info("Packet was sent")
 
-        return self.makeResult(ResultParameters(
+        return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["SEND"],
             description=f"Sent this payload: {parameters.payload}"
         ))
 
-    def handleReceiveCommand(self, parameters: ReceiveParameters):
+    def handle_receive_command(self, parameters: ReceiveParameters):
         logging.info("Receiving packet with expected flags: %s", parameters.flags)
 
-        packet = self.recv(expFlags=parameters.flags, timeout=parameters.timeout)
+        packet = self.recv(exp_flags=parameters.flags, timeout=parameters.timeout)
         logging.info("Sniffing finished")
 
         if not packet:
             logging.warning("no packet received due to timeout")
             raise UserException("Timeout reached")
 
-        TestServer.validatePayload(packet, parameters.payload)
+        TestServer.validate_payload(packet, parameters.payload)
 
-        return self.makeResult(ResultParameters(
+        return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["RECEIVE"],
             description=f"Packet received: {packet.__repr__()}"
         ))
 
-    def handleSendReceiveCommand(self, parameters: SendReceiveParameters):
-        sendParams = parameters.sendParameters
-        logging.info("Sending packet with flags: %s", sendParams.flags)
+    def handle_send_receive_command(self, parameters: SendReceiveParameters):
+        send_params = parameters.send_parameters
+        logging.info("Sending packet with flags: %s", send_params.flags)
 
-        pkt = self.makePacket(
-            payload=sendParams.payload,
-            seq=sendParams.sequenceNumber,
-            ack=sendParams.acknowledgementNumber,
-            flags=sendParams.flags
+        pkt = self.make_packet(
+            payload=send_params.payload,
+            seq=send_params.sequence_number,
+            ack=send_params.acknowledgement_number,
+            flags=send_params.flags
         )
         logging.info("Created packet")
 
-        ret = self.sr(pkt, expFlags=parameters.receiveParameters.flags)
+        ret = self.sr(pkt, exp_flags=parameters.receive_parameters.flags)
         logging.info("SR completed")
 
-        TestServer.validatePayload(ret, parameters.receiveParameters.payload)
+        TestServer.validate_payload(ret, parameters.receive_parameters.payload)
 
-        return self.makeResult(ResultParameters(
+        return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["SENDRECEIVE"],
             description=f"Packet received: {ret.__repr__()}"
         ))
 
-    def handleDisconnectCommand(self):
+    def handle_disconnect_command(self):
         logging.info("graceful disconnect from client")
 
-        fin = self.makePacket(flags="FA")
-        finack = self.sr(fin, expFlags="FA")
+        fin = self.make_packet(flags="FA")
+        finack = self.sr(fin, exp_flags="FA")
         logging.info("send fin packet")
 
         logging.info("sending ack")
-        ack = self.makePacket(flags="A")
+        ack = self.make_packet(flags="A")
         send(ack)
         logging.info("ack send")
 
-        return self.makeResult(ResultParameters(
+        return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["DISCONNECT"],
             description=f"Last Packet received: {finack.__repr__()}"
         ))
 
-    def handleAbortCommand(self):
+    def handle_abort_command(self):
         logging.info("aborting connection")
         self.reset()
         logging.info("abort done.")
 
-        return self.makeResult(ResultParameters(
+        return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["ABORT"],
         ))

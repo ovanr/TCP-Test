@@ -10,13 +10,14 @@ from config import TEST_RUNNER_IP, TEST_RUNNER_PORT
 from testCommand import TestCommand
 from testServer import TestServer
 
+
 async def runner(server: TestServer):
     uri = f"ws://{TEST_RUNNER_IP}:{str(TEST_RUNNER_PORT)}/server"
-    #pylint: disable=no-member
-    async with websockets.connect(uri) as websocket: #type: ignore
+    # pylint: disable=no-member
+    async with websockets.connect(uri) as websocket:  # type: ignore
         while True:
             cmd = cast(TestCommand, jsonpickle.decode(await websocket.recv()))
-            result = server.executeCommand(cmd)
+            result = server.execute_command(cmd)
             await websocket.send(jsonpickle.encode(result))
 
 
