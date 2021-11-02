@@ -44,7 +44,7 @@ class TestEleven(BaseTestCase):
                 TestCommand(
                     self.test_id,
                     CommandType['RECEIVE'],
-                    ReceiveParameters(flags="A", payload=PAYLOAD, timeout=30000)
+                    ReceiveParameters(flags="A", payload=PAYLOAD)
                 ),
                 TestCommand(
                     self.test_id,

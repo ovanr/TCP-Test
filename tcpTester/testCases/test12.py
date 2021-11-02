@@ -46,7 +46,7 @@ class TestTwelve(BaseTestCase):
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
                     SendParameters(acknowledgement_number=4294967196, flags="A"),
-                    ReceiveParameters(timeout=34444, flags="A")
+                    ReceiveParameters(flags="A")
                 )
             )
         ]

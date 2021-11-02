@@ -50,14 +50,14 @@ class TestEight(BaseTestCase):
             TestCommand(
                 self.test_id,
                 CommandType['RECEIVE'],
-                ReceiveParameters(flags="FA", timeout=34444)
+                ReceiveParameters(flags="FA")
             ),
             TestCommand(
                 self.test_id,
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
                     SendParameters(flags="FA"),
-                    ReceiveParameters(flags="A", timeout=34600)
+                    ReceiveParameters(flags="A")
                 )
             ),
         ]

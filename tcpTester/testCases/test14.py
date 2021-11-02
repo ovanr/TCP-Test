@@ -45,16 +45,17 @@ class TestFourteen(BaseTestCase):
                 CommandType['RECEIVE'],
                 ReceiveParameters(
                     payload=PAYLOAD,
-                    flags="A",
-                    timeout=30000)
+                    flags="A"
+                )
             ),
             TestCommand(
                 self.test_id,
                 CommandType['RECEIVE'],
                 ReceiveParameters(
+                    timeout=10,
                     payload=PAYLOAD,
-                    flags="A",
-                    timeout=30000)
+                    flags="A"
+                )
             ),
             TestCommand(
                 self.test_id,

@@ -54,7 +54,7 @@ class TestTen(BaseTestCase):
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
                     SendParameters(payload=PAYLOAD, flags="A"),
-                    ReceiveParameters(flags="A", timeout=34600)
+                    ReceiveParameters(flags="A")
                 )
             ),
             TestCommand(
@@ -62,7 +62,7 @@ class TestTen(BaseTestCase):
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
                     SendParameters(payload=PAYLOAD, flags="A"),
-                    ReceiveParameters(flags="A", timeout=34600)
+                    ReceiveParameters(flags="A")
                 )
             ),
             TestCommand(
@@ -70,7 +70,7 @@ class TestTen(BaseTestCase):
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
                     SendParameters(payload=PAYLOAD, flags="A"),
-                    ReceiveParameters(flags="A", timeout=34600)
+                    ReceiveParameters(flags="A")
                 )
             )
         ]
@@ -78,6 +78,6 @@ class TestTen(BaseTestCase):
             TestCommand(
                 self.test_id,
                 CommandType['RECEIVE'],
-                ReceiveParameters(timeout=34444, payload=EXPECTED_PAYLOAD)
+                ReceiveParameters(payload=EXPECTED_PAYLOAD)
             )
         ]

@@ -2,7 +2,9 @@ from tcpTester.testCommand import (
     CommandType,
     ConnectParameters,
     ListenParameters,
+    SendReceiveParameters,
     SendParameters,
+    ReceiveParameters,
     TestCommand,
 )
 from tcpTester.config import SUT_IP
@@ -38,22 +40,24 @@ class TestThirteen(BaseTestCase):
         ]
 
     def prepare_queues_test(self):
-        ## WARNING: Needs correct Sequence number
         self.queue_test_ts = [
             TestCommand(
                 self.test_id,
                 CommandType['SEND'],
                 SendParameters(
-                    sequence_number=5909268,
                     payload=PAYLOAD,
-                    flags="A")
+                    flags="A",
+                    update_ts_seq=False
+                )
             ),
             TestCommand(
                 self.test_id,
-                CommandType['SEND'],
-                SendParameters(
-                    sequence_number=5909268,
-                    payload=PAYLOAD,
-                    flags="A")
+                CommandType['SENDRECEIVE'],
+                SendReceiveParameters(
+                    SendParameters(
+                        payload=PAYLOAD,
+                        flags="A"),
+                    ReceiveParameters(flags="A")
+                )
             )
         ]

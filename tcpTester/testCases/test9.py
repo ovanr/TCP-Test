@@ -36,7 +36,7 @@ class TestNine(BaseTestCase):
             TestCommand(
                 self.test_id,
                 CommandType['RECEIVE'],
-                ReceiveParameters(flags="FA", timeout=34444)
+                ReceiveParameters(flags="FA")
             ),
             TestCommand(
                 self.test_id,
@@ -66,7 +66,7 @@ class TestNine(BaseTestCase):
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
                     SendParameters(payload=b"deadbeef", flags="A"),
-                    ReceiveParameters(flags="A", timeout=34600)
+                    ReceiveParameters(flags="A")
                 )
             ),
         ]

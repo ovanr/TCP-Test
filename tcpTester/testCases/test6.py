@@ -40,14 +40,14 @@ class TestSix(BaseTestCase):
             TestCommand(
                 self.test_id,
                 CommandType['RECEIVE'],
-                ReceiveParameters(flags="SA", timeout=36000)
+                ReceiveParameters(flags="SA")
             ),
             TestCommand(
                 self.test_id,
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
                     SendParameters(flags="FA"),
-                    ReceiveParameters(flags="A", timeout=34600)
+                    ReceiveParameters(flags="A")
                 )
             )
         ]

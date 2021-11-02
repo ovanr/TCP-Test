@@ -37,13 +37,13 @@ class TestFour(BaseTestCase):
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
                     SendParameters(flags="S"),
-                    ReceiveParameters(timeout=3600, flags="SA")
+                    ReceiveParameters(flags="SA")
                 )
             ),
             TestCommand(
                 self.test_id,
                 CommandType["SEND"],
-                SendParameters(flags="A"))
+                SendParameters(flags="SA"))
         ]
         self.queue_test_sut = [
             TestCommand(

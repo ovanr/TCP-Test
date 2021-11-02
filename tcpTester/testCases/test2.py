@@ -2,7 +2,9 @@ from tcpTester.testCommand import (
     CommandType,
     ConnectParameters,
     ListenParameters,
+    SendReceiveParameters,
     SendParameters,
+    ReceiveParameters,
     TestCommand,
 )
 from tcpTester.config import TEST_SERVER_IP
@@ -32,8 +34,11 @@ class TestTwo(BaseTestCase):
             ),
             TestCommand(
                 self.test_id,
-                CommandType['SEND'],
-                SendParameters(flags="A")
+                CommandType['SENDRECEIVE'],
+                SendReceiveParameters(
+                    SendParameters(flags="A"),
+                    ReceiveParameters(flags="R")
+                )
             )
         ]
         self.queue_test_sut = [
