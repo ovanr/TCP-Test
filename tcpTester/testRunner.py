@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+import threading
 from typing import List
 
 import asyncio
@@ -16,6 +16,12 @@ class TestRunner:
     _serverQueue = []
     _sutQueue = []
 
+    _sutThread: threading.Thread
+    _serverThread: threading.Thread
+
+    _serverQueueLock: threading.Lock = threading.Lock()
+    _sutQueueLock: threading.Lock = threading.Lock()
+
     _finish_event = asyncio.Event()
 
     _sut_start_event = asyncio.Event()
@@ -28,19 +34,23 @@ class TestRunner:
 
     @property
     def server_queue(self) -> List[TestCommand]:
-        return self._serverQueue
+        with self._serverQueueLock:
+            return self._serverQueue
 
     @server_queue.setter
     def server_queue(self, queue: List[TestCommand]):
-        self._serverQueue.append(queue)
+        with self._serverQueueLock:
+            self._serverQueue.append(queue)
 
     @property
     def sut_queue(self) -> List[TestCommand]:
-        return self._sutQueue
+        with self._sutQueueLock:
+            return self._sutQueue
 
     @sut_queue.setter
     def sut_queue(self, queue: List[TestCommand]):
-        self._sutQueue.append(queue)
+        with self._sutQueueLock:
+            self._sutQueue.append(queue)
 
     @staticmethod
     async def connected_element_thread(queue, websocket, start_event: asyncio.Event, finished_event: asyncio.Event):
@@ -95,10 +105,3 @@ class TestRunner:
         self._finish_event.set()
         self._task.join()
 
-
-test_runner = TestRunner()
-test_runner.start_runner()
-
-asyncio.run(test_runner.run())
-
-test_runner.finish_runner()
