@@ -14,7 +14,7 @@ from tcpTester.testCommand import TestCommand
 async def runner(sut: SUT):
     uri = f"ws://{TEST_RUNNER_IP}:{str(TEST_RUNNER_PORT)}/sut"
     # pylint: disable=no-member
-    async with websockets.connect(uri) as websocket:  # type: ignore
+    async with websockets.connect(uri, ping_timeout=None) as websocket:  # type: ignore
         websocket.ping_timeout = None
 
         while True:
