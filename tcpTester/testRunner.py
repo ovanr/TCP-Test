@@ -69,6 +69,7 @@ class TestRunner:
                 cmd = self._sutSendQueue.pop(0)
                 await websocket.send(jsonpickle.encode(cmd))
                 self._sutResponseQueue.append(jsonpickle.decode(await websocket.recv()))
+            await asyncio.sleep(0.5)
         self.logger.info("Ending SUT websocket!")
 
     async def ts_queue_management(self, websocket):
@@ -77,6 +78,7 @@ class TestRunner:
                 cmd = self._serverSendQueue.pop(0)
                 await websocket.send(jsonpickle.encode(cmd))
                 self._serverResponseQueue.append(jsonpickle.decode(await websocket.recv()))
+            await asyncio.sleep(0.5)
         self.logger.info("Ending TestServer websocket!")
 
     def run(self):
@@ -207,10 +209,7 @@ class TestRunner:
 
             async with websockets.serve(router, "", TEST_RUNNER_PORT):  # type: ignore
                 while not self._finish_event.is_set():
-                    try:
-                        await asyncio.wait_for(asyncio.Future(), timeout=0.5)
-                    except asyncio.exceptions.TimeoutError:
-                        continue
+                    await asyncio.sleep(0.5)
                 return 0
         self._task = Thread(target=lambda: asyncio.run(task_main()))
         self._task.start()

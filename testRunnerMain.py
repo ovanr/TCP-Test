@@ -24,4 +24,5 @@ if __name__ == "__main__":
     test_case.setup_test(runner=test_runner)
     test_case.run_test(runner=test_runner)
 
-    test_runner.finish_runner()
+    # test_runner.finish_runner()
+    input()
