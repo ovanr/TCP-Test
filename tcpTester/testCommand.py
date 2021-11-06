@@ -101,10 +101,14 @@ Parameters = Union[SendParameters,
                    None]
 
 
-@dataclass()
+@dataclass(init=False)
 class Command(WithShow):
     command_type: CommandType
     command_parameters: Parameters = None
+
+    def __init__(self, command_type: CommandType, command_parameters: Parameters = None):
+        self.command_type = command_type
+        self.command_parameters = command_parameters
 
 
 class TestCommand(Command):
@@ -112,3 +116,9 @@ class TestCommand(Command):
 
     test_number: int
     timestamp: Optional[int] = None
+
+    def __init__(self, test_number: int, command_type: CommandType, command_parameters: Parameters = None,
+                 timestamp: Optional[int] = None):
+        super().__init__(command_type, command_parameters)
+        self.test_number = test_number
+        self.timestamp = timestamp

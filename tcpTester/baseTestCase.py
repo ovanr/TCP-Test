@@ -48,18 +48,18 @@ class BaseTestCase(ABC):
 
         :return: True on success, False otherwise.
         """
-        self.logger.info("[%s] Preparing setup queues!", self.test_name)
+        self.logger.info("Preparing setup queues!")
         self.prepare_queues_setup_test()
-        self.logger.info("[%s] Finished setup queues!", self.test_name)
+        self.logger.info("Finished setup queues!")
         runner.server_queue = self.queue_test_setup_ts
         runner.sut_queue = self.queue_test_setup_sut
-        self.logger.info("[%s] Running test setup!", self.test_name)
+        self.logger.info("Running test setup!")
         if runner.run():
             runner.cleanup()
-            self.logger.info("[%s] Finished test setup successfully!", self.test_name)
+            self.logger.info("Finished test setup successfully!")
             return True
         runner.cleanup()
-        self.logger.warning("[%s] Failed to run test setup!", self.test_name)
+        self.logger.warning("Failed to run test setup!")
         return False
 
     def run_test(self, runner: TestRunner):
@@ -70,17 +70,17 @@ class BaseTestCase(ABC):
 
         :return: True on success, False otherwise.
         """
-        self.logger.info("[%s] Preparing test queues!", self.test_name)
+        self.logger.info("Preparing test queues!")
         self.prepare_queues_test()
-        self.logger.info("[%s] Finished test queues!", self.test_name)
+        self.logger.info("Finished test queues!")
         runner.server_queue = self.queue_test_ts
         runner.sut_queue = self.queue_test_sut
         if runner.run():
             runner.cleanup()
-            self.logger.warning("[%s] Running test!", self.test_name)
+            self.logger.warning("Running test!")
             return True
         runner.cleanup()
-        self.logger.warning("[%s] Finished test!", self.test_name)
+        self.logger.warning("Finished test!")
         return False
 
     @abstractmethod

@@ -28,7 +28,7 @@ if __name__ == "__main__":
         try:
             async with websockets.connect(uri) as websocket:  # type: ignore
                 while True:
-                    recv_data =  jsonpickle.decode(await websocket.recv())[0]
+                    recv_data =  jsonpickle.decode(await websocket.recv())
                     cmd = cast(TestCommand,recv_data)
                     result = server.execute_command(cmd)
                     await websocket.send(jsonpickle.encode(result))

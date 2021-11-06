@@ -51,7 +51,7 @@ class TestRunner:
     @server_queue.setter
     def server_queue(self, queue: List[TestCommand]):
         with self._serverQueueLock:
-            self._serverQueue.append(queue)
+            self._serverQueue.extend(queue)
 
     @property
     def sut_queue(self) -> List[TestCommand]:
@@ -61,31 +61,23 @@ class TestRunner:
     @sut_queue.setter
     def sut_queue(self, queue: List[TestCommand]):
         with self._sutQueueLock:
-            self._sutQueue.append(queue)
+            self._sutQueue.extend(queue)
 
     async def sut_queue_management(self, websocket):
         while not self._finish_event.is_set():
-            self.logger.debug("Waiting for SUT start event!")
-            await self._sut_start_event.wait()
-            await asyncio.sleep(1)
-            self.logger.debug("SUT start event triggered!")
             while len(self._sutSendQueue) != 0:
                 cmd = self._sutSendQueue.pop(0)
                 await websocket.send(jsonpickle.encode(cmd))
                 self._sutResponseQueue.append(jsonpickle.decode(await websocket.recv()))
-            self._sut_finished_event.set()
+        self.logger.info("Ending SUT websocket!")
 
     async def ts_queue_management(self, websocket):
         while not self._finish_event.is_set():
-            self.logger.debug("Waiting for test server start event!")
-            await self._ts_start_event.wait()
-            await asyncio.sleep(1)
-            self.logger.debug("Test server start event triggered!")
             while len(self._serverSendQueue) != 0:
                 cmd = self._serverSendQueue.pop(0)
                 await websocket.send(jsonpickle.encode(cmd))
                 self._serverResponseQueue.append(jsonpickle.decode(await websocket.recv()))
-            self._ts_finished_event.set()
+        self.logger.info("Ending TestServer websocket!")
 
     def run(self):
         # pylint: disable=too-many-statements
@@ -93,13 +85,15 @@ class TestRunner:
         if self._finish_event.is_set():
             self.logger.warning("Finish flag is set! Not executing run function!")
             return
-        self._sut_start_event.set()
-        self._ts_start_event.set()
 
         sut_last_sync_id = 0
         ts_last_sync_id = 0
 
+        self._sut_start_event.set()
+        self._ts_start_event.set()
+
         def sut_run_manager():
+
             send_commands_since_sync = 0
             received_responses_since_sync = 0
 
@@ -134,6 +128,8 @@ class TestRunner:
             self.logger.info("Finished SUT command enqueuing!")
 
         def ts_run_manager():
+
+
             send_commands_since_sync = 0
             received_responses_since_sync = 0
 
@@ -185,6 +181,8 @@ class TestRunner:
 
     def start_runner(self):
         # pylint: disable=no-member
+        self._sut_start_event.clear()
+        self._ts_start_event.clear()
 
         async def router(websocket, path):
             if path == '/server':
@@ -206,6 +204,7 @@ class TestRunner:
 
         async def task_main():
             # pylint: disable=no-member
+
             async with websockets.serve(router, "", TEST_RUNNER_PORT):  # type: ignore
                 while not self._finish_event.is_set():
                     try:
