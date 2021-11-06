@@ -24,6 +24,8 @@ class TestNine(BaseTestCase):
 
     def prepare_queues_setup_test(self):
         self.queue_test_setup_ts = [
+            # SYNC(id=1, wait_response=False)
+            # WAIT(sec=2)
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
@@ -33,6 +35,7 @@ class TestNine(BaseTestCase):
                     dst_port=PORT_SUT
                 )
             ),
+            # SYNC(id=2, wait_response=True)
             TestCommand(
                 self.test_id,
                 CommandType['RECEIVE'],
@@ -43,6 +46,7 @@ class TestNine(BaseTestCase):
                 CommandType['SEND'],
                 SendParameters(flags="A")
             ),
+            # SYNC(id=3, wait_response=False)
         ]
         self.queue_test_setup_sut = [
             TestCommand(
@@ -53,6 +57,9 @@ class TestNine(BaseTestCase):
                     src_port=PORT_SUT
                 )
             ),
+            # SYNC(id=1, wait_response=False)
+            # SYNC(id=2, wait_response=True)
+            # SYNC(id=3, wait_response=False)
             TestCommand(
                 self.test_id,
                 CommandType['DISCONNECT']

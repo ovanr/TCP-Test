@@ -27,6 +27,8 @@ class TestSix(BaseTestCase):
 
     def prepare_queues_test(self):
         self.queue_test_ts = [
+            # SYNC(id=1, wait_response=False)
+            # WAIT(sec=2)
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
@@ -60,4 +62,5 @@ class TestSix(BaseTestCase):
                     src_port=PORT_SUT
                 )
             )
+            # SYNC(id=1, wait_response=False)
         ]

@@ -26,6 +26,8 @@ class TestTen(BaseTestCase):
 
     def prepare_queues_setup_test(self):
         self.queue_test_setup_ts = [
+            # SYNC(id=1, wait_response=False)
+            # WAIT(sec=2)
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
@@ -45,6 +47,7 @@ class TestTen(BaseTestCase):
                     src_port=PORT_SUT
                 )
             )
+            # SYNC(id=1, wait_response=False)
         ]
 
     def prepare_queues_test(self):
@@ -73,8 +76,10 @@ class TestTen(BaseTestCase):
                     ReceiveParameters(flags="A")
                 )
             )
+            # SYNC(id=1, wait_response=True)
         ]
         self.queue_test_sut = [
+            # SYNC(id=1, wait_response=False)
             TestCommand(
                 self.test_id,
                 CommandType['RECEIVE'],

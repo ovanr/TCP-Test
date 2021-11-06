@@ -25,6 +25,8 @@ class TestTwelve(BaseTestCase):
 
     def prepare_queues_setup_test(self):
         self.queue_test_setup_ts = [
+            # SYNC(id=1, wait_response=False)
+            # WAIT(sec=2)
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
@@ -37,6 +39,7 @@ class TestTwelve(BaseTestCase):
                 CommandType['LISTEN'],
                 ListenParameters(interface=SUT_IP, src_port=PORT_SUT)
             )
+            # SYNC(id=1, wait_response=False)
         ]
 
     def prepare_queues_test(self):
@@ -50,3 +53,4 @@ class TestTwelve(BaseTestCase):
                 )
             )
         ]
+        self.queue_test_sut = []

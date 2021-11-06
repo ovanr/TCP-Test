@@ -40,8 +40,11 @@ class TestTwo(BaseTestCase):
                     ReceiveParameters(flags="R")
                 )
             )
+            # SYNC(id=1, wait_response=False)
         ]
         self.queue_test_sut = [
+            # SYNC(id=1, wait_response=False)
+            # WAIT(sec=2)
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
