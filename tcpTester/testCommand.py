@@ -4,6 +4,8 @@ from typing import Optional, Union
 from dataclasses import dataclass
 
 
+DEFAULT_TIMEOUT = 600 # 10 minutes
+
 class UserException(Exception):
     pass
 
@@ -37,11 +39,11 @@ class SendParameters(WithShow):
     sequence_number: Optional[int] = None
     acknowledgement_number: Optional[int] = None
     flags: Optional[str] = None
-
+    update_ts_seq: bool = True
 
 @dataclass
 class ReceiveParameters(WithShow):
-    timeout: int
+    timeout: int = DEFAULT_TIMEOUT
     payload: Optional[bytes] = None
     flags: Optional[str] = None
 
