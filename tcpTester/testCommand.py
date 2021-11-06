@@ -3,8 +3,8 @@ from enum import Enum
 from typing import Optional, Union
 from dataclasses import dataclass
 
+DEFAULT_TIMEOUT = 600  # 10 minutes
 
-DEFAULT_TIMEOUT = 600 # 10 minutes
 
 class UserException(Exception):
     pass
@@ -19,6 +19,8 @@ class CommandType(Enum):
     DISCONNECT = 5
     ABORT = 6
     RESULT = 7
+    SYNC = 8
+    WAIT = 9
 
 
 class WithShow:
@@ -40,6 +42,7 @@ class SendParameters(WithShow):
     acknowledgement_number: Optional[int] = None
     flags: Optional[str] = None
     update_ts_seq: bool = True
+
 
 @dataclass
 class ReceiveParameters(WithShow):
@@ -76,18 +79,36 @@ class ResultParameters(WithShow):
     error_message: Optional[str] = None
 
 
+@dataclass
+class SyncParameters(WithShow):
+    sync_id: int
+    wait_for_result: bool = False
+
+
+@dataclass
+class WaitParameters(WithShow):
+    seconds: int
+
+
 Parameters = Union[SendParameters,
                    ReceiveParameters,
                    SendReceiveParameters,
                    ConnectParameters,
                    ListenParameters,
                    ResultParameters,
+                   SyncParameters,
+                   WaitParameters,
                    None]
 
 
-@dataclass
-class TestCommand(WithShow):
-    test_number: int
+@dataclass()
+class Command(WithShow):
     command_type: CommandType
     command_parameters: Parameters = None
+
+
+class TestCommand(Command):
+    # pylint: disable=too-few-public-methods
+
+    test_number: int
     timestamp: Optional[int] = None

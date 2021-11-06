@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
+# pylint: disable=duplicate-code
 
 import asyncio
-import logging
+import sys
 from typing import cast
 
 import jsonpickle
@@ -25,15 +26,16 @@ if __name__ == "__main__":
         try:
             async with websockets.connect(uri) as websocket:  # type: ignore
                 while True:
-                    cmd = cast(TestCommand, jsonpickle.decode(await websocket.recv()))
+                    recv_data = jsonpickle.decode(await websocket.recv())[0]
+                    cmd = cast(TestCommand, recv_data)
                     result = sut.execute_command(cmd)
                     await websocket.send(jsonpickle.encode(result))
         except OSError as exc:
             sut.logger.error("Connection to the TestRunner failed - OSError: {}".format(exc.strerror))
-            exit(-1)
+            sys.exit(-1)
         except Exception as exc:
             sut.logger.error("Unexpected error: {}".format(exc))
-            exit(-2)
+            sys.exit(-2)
 
 
     asyncio.run(

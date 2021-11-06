@@ -36,7 +36,7 @@ class TestServer(BaseRunner):
         self.ack = -1
         self.sport = -1
         self.dport = -1
-        
+
     @property
     def logger(self):
         return logging.getLogger("TestServer")

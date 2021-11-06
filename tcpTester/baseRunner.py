@@ -16,12 +16,14 @@ from tcpTester.testCommand import (
 
 
 class BaseRunner(ABC):
+    _test_number: int = -1
+
     def __init__(self):
-        self.test_number = -1
+        self._test_number: int = -1
 
     def execute_command(self, cmd: TestCommand):
-        if cmd.test_number != self.test_number:
-            self.test_number = cmd.test_number
+        if cmd.test_number != self._test_number:
+            self._test_number = cmd.test_number
             try:
                 self.reset()
             except Exception:
@@ -64,7 +66,7 @@ class BaseRunner(ABC):
 
     def make_result(self, params: ResultParameters):
         return TestCommand(
-            test_number=self.test_number,
+            test_number=self._test_number,
             command_type=CommandType["RESULT"],
             command_parameters=params
         )

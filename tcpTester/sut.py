@@ -25,7 +25,7 @@ class SUT(BaseRunner):
 
         self.client_socket = None
         self.socket = None
-        
+
     @property
     def logger(self):
         return logging.getLogger("SUT")

@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
-import asyncio
-import logging
-from logging.handlers import RotatingFileHandler
+import sys
 
 from tcpTester import TestCaseLoader, TestRunner, set_up_logging
 
@@ -14,13 +12,16 @@ if __name__ == "__main__":
     no_of_loaded_test_cases = test_loader.load_test_cases()
     if no_of_loaded_test_cases == 0:
         test_loader.logger.error("No testCases loaded! Please check the tcpTester.testCases module!")
-        exit(-1)
+        sys.exit(-1)
     else:
-        test_loader.logger.info("Loaded {} test cases!".format(no_of_loaded_test_cases))
+        test_loader.logger.info("Loaded %s test cases!", no_of_loaded_test_cases)
 
     test_runner = TestRunner()
     test_runner.start_runner()
 
-    asyncio.run(test_runner.run())
+    test_case = test_loader.test_cases[0]()
+
+    test_case.setup_test(runner=test_runner)
+    test_case.run_test(runner=test_runner)
 
     test_runner.finish_runner()
