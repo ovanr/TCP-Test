@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from logging import info, warning
-from testRunner import TestRunner
+from tcpTester.testRunner import TestRunner
 
 
 class BaseTestCase(ABC):

@@ -10,17 +10,17 @@ from tcpTester.testCommand import (
 from tcpTester.config import TEST_SERVER_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6000
-PORT_SUT = 5000
+PORT_TS = 6001
+PORT_SUT = 5001
 
-class TestOne(BaseTestCase):
+class TestTwo(BaseTestCase):
     @property
     def test_name(self) -> str:
-        return "Connection establishment with passive host"
+        return "Reply to first SYN with just an ACK"
 
     @property
     def test_id(self) -> int:
-        return 1
+        return 2
 
     def prepare_queues_setup_test(self):
         pass
@@ -36,20 +36,15 @@ class TestOne(BaseTestCase):
                 self.test_id,
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
-                    SendParameters(flags="SA"),
-                    ReceiveParameters(flags="A")
+                    SendParameters(flags="A"),
+                    ReceiveParameters(flags="R")
                 )
             )
         ]
-
         self.queue_test_sut = [
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
-                ConnectParameters(
-                    destination=TEST_SERVER_IP,
-                    src_port=PORT_SUT,
-                    dst_port=PORT_TS
-                )
+                ConnectParameters(destination=TEST_SERVER_IP, src_port=PORT_SUT, dst_port=PORT_TS)
             )
         ]

@@ -2,25 +2,25 @@ from tcpTester.testCommand import (
     CommandType,
     ConnectParameters,
     ListenParameters,
-    SendReceiveParameters,
     SendParameters,
+    SendReceiveParameters,
     ReceiveParameters,
     TestCommand,
 )
 from tcpTester.config import TEST_SERVER_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6000
-PORT_SUT = 5000
+PORT_TS = 6003
+PORT_SUT = 5003
 
-class TestOne(BaseTestCase):
+class TestFour(BaseTestCase):
     @property
     def test_name(self) -> str:
-        return "Connection establishment with passive host"
+        return "Simultaneous connection establishment"
 
     @property
     def test_id(self) -> int:
-        return 1
+        return 4
 
     def prepare_queues_setup_test(self):
         pass
@@ -36,20 +36,19 @@ class TestOne(BaseTestCase):
                 self.test_id,
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
-                    SendParameters(flags="SA"),
-                    ReceiveParameters(flags="A")
+                    SendParameters(flags="S"),
+                    ReceiveParameters(flags="SA")
                 )
-            )
+            ),
+            TestCommand(
+                self.test_id,
+                CommandType["SEND"],
+                SendParameters(flags="SA"))
         ]
-
         self.queue_test_sut = [
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
-                ConnectParameters(
-                    destination=TEST_SERVER_IP,
-                    src_port=PORT_SUT,
-                    dst_port=PORT_TS
-                )
+                ConnectParameters(destination=TEST_SERVER_IP, src_port=PORT_SUT, dst_port=PORT_TS)
             )
         ]

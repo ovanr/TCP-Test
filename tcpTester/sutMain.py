@@ -6,9 +6,9 @@ from typing import cast
 import jsonpickle
 import websockets
 
-from config import TEST_RUNNER_IP, TEST_RUNNER_PORT
-from sut import SUT
-from testCommand import TestCommand
+from tcpTester.config import TEST_RUNNER_IP, TEST_RUNNER_PORT
+from tcpTester.sut import SUT
+from tcpTester.testCommand import TestCommand
 
 
 async def runner(sut: SUT):
