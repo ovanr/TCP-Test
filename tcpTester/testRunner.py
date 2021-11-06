@@ -96,9 +96,10 @@ class TestRunner:
         self._task.join()
 
 
-test_runner = TestRunner()
-test_runner.start_runner()
-
-asyncio.run(test_runner.run())
-
-test_runner.finish_runner()
+if __name__ == '__main__':
+    test_runner = TestRunner()
+    test_runner.start_runner()
+    
+    asyncio.run(test_runner.run())
+    
+    test_runner.finish_runner()
