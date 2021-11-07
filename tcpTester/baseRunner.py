@@ -18,6 +18,11 @@ from tcpTester.testCommand import (
 class BaseRunner(ABC):
     _test_number: int = -1
 
+    @property
+    @abstractmethod
+    def logger(self) -> logging.Logger:
+        pass
+
     def __init__(self):
         self._test_number: int = -1
 
@@ -48,14 +53,14 @@ class BaseRunner(ABC):
             elif cmd.command_type == CommandType["ABORT"]:
                 result = self.handle_abort_command()
         except UserException as exception:
-            logging.warning("Command ended with error.")
+            self.logger.warning("Command ended with error: %s", exception)
             result = self.make_result(ResultParameters(
                 status=1,
                 operation=cmd.command_type,
                 error_message=str(exception)
             ))
         except Exception as exception:
-            logging.warning("Command ended with error.")
+            self.logger.warning("Command ended with error: %s", exception)
             result = self.make_result(ResultParameters(
                 status=2,
                 operation=cmd.command_type,

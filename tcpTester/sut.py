@@ -21,7 +21,7 @@ class SUT(BaseRunner):
     def __init__(self):
         super().__init__()
 
-        self.logger.info("sut started")
+        self.logger.info("SUT started")
 
         self.client_socket = None
         self.socket = None

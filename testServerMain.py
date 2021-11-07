@@ -30,6 +30,7 @@ if __name__ == "__main__":
                 while True:
                     recv_data =  jsonpickle.decode(await websocket.recv())
                     cmd = cast(TestCommand,recv_data)
+                    server.logger.info("Received command: %s!", cmd)
                     result = server.execute_command(cmd)
                     await websocket.send(jsonpickle.encode(result))
         except  asyncio.exceptions.TimeoutError as exc:

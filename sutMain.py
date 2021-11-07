@@ -28,6 +28,7 @@ if __name__ == "__main__":
                 while True:
                     recv_data = jsonpickle.decode(await websocket.recv())
                     cmd = cast(TestCommand, recv_data)
+                    sut.logger.info("Received command: %s!", cmd)
                     result = sut.execute_command(cmd)
                     await websocket.send(jsonpickle.encode(result))
         except OSError as exc:
