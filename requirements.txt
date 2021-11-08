@@ -2,3 +2,4 @@ scapy[complete]
 websockets
 jsonpickle
 asyncio
+termcolor

@@ -12,13 +12,13 @@ def set_up_logging(log_dir_prefix: str):
     main_logger.setLevel(DEBUG)
 
     console_handler = StreamHandler()
-    console_handler.setLevel(INFO)
+    console_handler.setLevel(logging.ERROR)
     console_handler.setFormatter(Formatter(log_console_format))
 
     exp_file_handler = RotatingFileHandler('{}_debug.log'.format(log_dir_prefix),
                                            maxBytes=10 ** 6,
                                            backupCount=5)
-    exp_file_handler.setLevel(DEBUG)
+    exp_file_handler.setLevel(INFO)
     exp_file_handler.setFormatter(Formatter(log_file_format))
 
     exp_errors_file_handler = RotatingFileHandler('{}_error.log'.format(log_dir_prefix),

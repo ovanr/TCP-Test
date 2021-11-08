@@ -23,7 +23,7 @@ from tcpTester.testCommand import (
 )
 
 # timeout for the sr1 command (in seconds)
-DEFAULT_TIMEOUT = 20
+DEFAULT_TIMEOUT = 5
 
 class TestServer(BaseRunner):
     def __init__(self):
@@ -150,6 +150,7 @@ class TestServer(BaseRunner):
 
     def sr(self,
            packet: Packet,
+           exp_flags: Optional[str] = None,
            timeout: int = DEFAULT_TIMEOUT,
            update_seq: bool = True) -> Packet:
 
@@ -161,6 +162,11 @@ class TestServer(BaseRunner):
         if not packet:
             self.logger.info("timeout reached, could not detect packet ")
             raise UserException("Got no response to packet")
+
+        missing_flags = self.get_missing_flags(packet, exp_flags=exp_flags)
+        if missing_flags:
+            self.logger.info('packet received with missing flags: %s', missing_flags)
+            raise UserException(f"Received packet with invalid flags {missing_flags}")
 
         self.logger.info('packet received')
 

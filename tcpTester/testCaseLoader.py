@@ -7,7 +7,7 @@ from .baseTestCase import BaseTestCase
 
 
 class TestCaseLoader:
-    _test_cases: List[Type[BaseTestCase]] = []
+    _test_cases: List[BaseTestCase] = []
     _logger: logging.Logger = logging.getLogger("TestCaseLoader")
 
     @property
@@ -15,7 +15,7 @@ class TestCaseLoader:
         return self._logger
 
     @property
-    def test_cases(self):
+    def test_cases(self) -> List[BaseTestCase]:
         return self._test_cases
 
     def load_test_cases(self) -> int:
@@ -29,8 +29,10 @@ class TestCaseLoader:
             for name, obj in inspect.getmembers(test_cases_module):
                 if inspect.isclass(obj) and (obj is not BaseTestCase) and (issubclass(obj, BaseTestCase)):
                     self.logger.debug("Loaded testCase: %s!", name)
-                    self._test_cases.append(obj)
+                    self._test_cases.append(obj())
         except ImportError as exc:
             self.logger.error("Could not load testCase: %s! Error message: %s", exc.path, exc.msg)
             self._test_cases = []
+
+        self._test_cases.sort(key=lambda x: x.test_id)
         return len(self._test_cases)

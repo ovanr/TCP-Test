@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import sys
 
+from termcolor import colored
+
 from tcpTester import TestCaseLoader, TestRunner, set_up_logging
 
 LOG_DIR_PREFIX = "./test_runner"
@@ -19,10 +21,12 @@ if __name__ == "__main__":
     test_runner = TestRunner()
     test_runner.start_runner()
 
-    test_case = test_loader.test_cases[0]()
+    for test in test_loader.test_cases:
+        test.setup_test(runner=test_runner)
+        result = test.run_test(runner=test_runner)
+        if result:
+            print(f"[Test {test.test_id}] {test.test_name}...".ljust(80, "."), colored("PASS", "green"))
+        else:
+            print(f"[Test {test.test_id}] {test.test_name}...".ljust(80, "."), colored("FAIL", "red"))
 
-    test_case.setup_test(runner=test_runner)
-    test_case.run_test(runner=test_runner)
-
-    # test_runner.finish_runner()
-    input()
+    test_runner.finish_runner()

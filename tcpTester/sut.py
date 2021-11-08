@@ -14,7 +14,7 @@ from tcpTester.testCommand import (
 )
 
 MAX_READ_SIZE = 4096  # in bytes
-
+TIMEOUT = 20
 
 class SUT(BaseRunner):
 
@@ -31,32 +31,32 @@ class SUT(BaseRunner):
         return logging.getLogger("SUT")
 
     def reset(self):
-        if not hasattr(self, "clientSocket"):
-            return
-
-        some_exception = None
+        client_exception = None
+        socket_exception = None
 
         try:
             if self.client_socket:
                 self.client_socket.close()
         except Exception as exception:
-            some_exception = exception
-            try:
-                if self.socket:
-                    self.socket.close()
-            except Exception as other_exception:
-                some_exception = other_exception
-        finally:
-            self.socket = None
-            self.client_socket = None
+            client_exception = exception
 
-            if some_exception:
-                raise some_exception
+        try:
+            if self.socket:
+                self.socket.close()
+        except Exception as other_exception:
+            socket_exception = other_exception
+
+        self.socket = None
+        self.client_socket = None
+
+        if socket_exception and not client_exception:
+            raise socket_exception
 
     def handle_connect_command(self, parameters: ConnectParameters):
         self.logger.info("Attempting to connect to %s", parameters.dst_port)
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(TIMEOUT)
         self.socket.bind(("", parameters.src_port))
         self.logger.info("bind successful")
 
@@ -72,6 +72,7 @@ class SUT(BaseRunner):
         self.logger.info("starting socket on %s", parameters.src_port)
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(TIMEOUT)
         self.socket.bind(("", parameters.src_port))
         self.socket.listen(1)
 
