@@ -20,10 +20,8 @@ from tcpTester.testCommand import (
     SendParameters,
     SendReceiveParameters,
     UserException,
+    DEFAULT_TIMEOUT
 )
-
-# timeout for the sr1 command (in seconds)
-DEFAULT_TIMEOUT = 5
 
 class TestServer(BaseRunner):
     def __init__(self):
@@ -154,27 +152,27 @@ class TestServer(BaseRunner):
            timeout: int = DEFAULT_TIMEOUT,
            update_seq: bool = True) -> Packet:
 
-        packet = sr1(packet, iface=TEST_SERVER_INTERFACE, timeout=timeout)
+        recv_packet = sr1(packet, iface=TEST_SERVER_INTERFACE, timeout=timeout)
         if update_seq:
             self.update_sequence_num(packet)
         self.logger.info('first packet sent')
 
-        if not packet:
+        if not recv_packet:
             self.logger.info("timeout reached, could not detect packet ")
             raise UserException("Got no response to packet")
 
-        missing_flags = self.get_missing_flags(packet, exp_flags=exp_flags)
+        missing_flags = self.get_missing_flags(recv_packet, exp_flags=exp_flags)
         if missing_flags:
             self.logger.info('packet received with missing flags: %s', missing_flags)
-            raise UserException(f"Received packet with invalid flags {missing_flags}")
+            raise UserException(f"Received packet with invalid flags {str(missing_flags)}")
 
         self.logger.info('packet received')
 
-        self.validate_packet_seq(packet)
-        self.validate_packet_ack(packet)
-        self.update_ack_num(packet)
+        self.validate_packet_seq(recv_packet)
+        self.validate_packet_ack(recv_packet)
+        self.update_ack_num(recv_packet)
 
-        return packet
+        return recv_packet
 
     def make_packet(self,
                     payload: Optional[bytes] = None,
@@ -302,6 +300,7 @@ class TestServer(BaseRunner):
 
         ret = self.sr(pkt,
                       exp_flags=parameters.receive_parameters.flags,
+                      timeout=parameters.receive_parameters.timeout,
                       update_seq=parameters.send_parameters.update_ts_seq)
         self.logger.info("SR completed")
 
