@@ -5,7 +5,7 @@ from tcpTester.testCommand import (
     SendParameters,
     SendReceiveParameters,
     ReceiveParameters,
-    TestCommand,
+    TestCommand, Command, SyncParameters,
 )
 from tcpTester.config import TEST_SERVER_IP
 from tcpTester.baseTestCase import BaseTestCase
@@ -43,12 +43,41 @@ class TestFour(BaseTestCase):
             TestCommand(
                 self.test_id,
                 CommandType["SEND"],
-                SendParameters(flags="SA"))
+                SendParameters(flags="SA")
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
+                )
+            )
         ]
         self.queue_test_sut = [
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
                 ConnectParameters(destination=TEST_SERVER_IP, src_port=PORT_SUT, dst_port=PORT_TS)
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
+                )
             )
         ]

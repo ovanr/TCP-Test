@@ -5,7 +5,7 @@ from tcpTester.testCommand import (
     SendParameters,
     ReceiveParameters,
     SendReceiveParameters,
-    TestCommand,
+    TestCommand, Command, SyncParameters,
 )
 from tcpTester.config import SUT_IP
 from tcpTester.baseTestCase import BaseTestCase
@@ -27,6 +27,13 @@ class TestSix(BaseTestCase):
 
     def prepare_queues_test(self):
         self.queue_test_ts = [
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
@@ -49,6 +56,13 @@ class TestSix(BaseTestCase):
                     SendParameters(flags="FA"),
                     ReceiveParameters(flags="A")
                 )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
+                )
             )
         ]
         self.queue_test_sut = [
@@ -58,6 +72,20 @@ class TestSix(BaseTestCase):
                 ListenParameters(
                     interface=SUT_IP,
                     src_port=PORT_SUT
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
                 )
             )
         ]

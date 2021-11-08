@@ -180,6 +180,8 @@ class TestRunner:
             self.logger.warning("Finish flag is set! Not executing run function!")
             return False
 
+        simultaneous_start_event = threading.Event()
+
         sut_last_sync_id = 0
         ts_last_sync_id = 0
 
@@ -198,10 +200,12 @@ class TestRunner:
             nonlocal sut_last_sync_id
             nonlocal ts_last_sync_id
             nonlocal sut_result_failure
+            nonlocal ts_result_failure
 
             # Wait for the sut and ts to be connected.
             self._sut_connected_event.wait()
             self._ts_started_event.wait()
+            time.sleep(1)
 
             # Logger to use in this function.
             sut_manager_logger = self.logger.getChild("SUTQueueManager")
@@ -209,6 +213,8 @@ class TestRunner:
             # Variables used for managing the sync queue.
             send_commands_since_sync = 0
             received_responses_since_sync = 0
+
+            simultaneous_start_event.wait()
 
             while not self._sut_disconnected_event.is_set() and len(self.sut_queue) > 0:
                 next_sut_command: TestCommand = self.sut_queue.pop(0)
@@ -236,20 +242,25 @@ class TestRunner:
                         while len(self._sut_response_queue) > 0:
                             response: TestCommand = self._sut_response_queue.pop(0)
                             if response.command_parameters.status != 0:
-                                sut_manager_logger.error("Invalid SUT result: %s, test failed!", response)
-                                print("SUT returned non 0 result: {}".format(response.command_parameters.error_message))
+                                if self._finish_event.is_set() or ts_result_failure:
+                                    return
+
+                                sut_manager_logger.warning("Invalid SUT result: %s, test failed!", response)
 
                                 sut_result_failure = True
-                                self._finish_event.set()
                                 return
                             sut_manager_logger.info("Received sut result: %s", response)
                             received_responses_since_sync += 1
                     send_commands_since_sync = 0
                     received_responses_since_sync = 0
                 sut_last_sync_id = next_sut_command.command_parameters.sync_id
-                while sut_last_sync_id != ts_last_sync_id:
+                while sut_last_sync_id > ts_last_sync_id:
+                    if self._finish_event.is_set() or ts_result_failure:
+                        return
+
                     time.sleep(0.5)
             sut_manager_logger.info("Finished SUT command enqueuing!")
+            return
 
         def ts_run_manager():
             """
@@ -263,10 +274,12 @@ class TestRunner:
             nonlocal sut_last_sync_id
             nonlocal ts_last_sync_id
             nonlocal ts_result_failure
+            nonlocal sut_result_failure
 
             # Wait for the sut and ts to be connected.
             self._ts_started_event.wait()
             self._sut_connected_event.wait()
+            time.sleep(1)
 
             # Logger to use in this function.
             ts_manager_logger = self.logger.getChild("TSQueueManager")
@@ -274,6 +287,8 @@ class TestRunner:
             # Variables used for managing the sync queue.
             send_commands_since_sync = 0
             received_responses_since_sync = 0
+
+            simultaneous_start_event.wait()
 
             while not self._ts_finished_event.is_set() and len(self.server_queue) > 0:
                 next_ts_command: TestCommand = self.server_queue.pop(0)
@@ -296,12 +311,13 @@ class TestRunner:
                 if next_ts_command.command_parameters.wait_for_result:
                     while received_responses_since_sync < send_commands_since_sync:
                         while len(self._server_response_queue) > 0:
+                            if self._finish_event.is_set() or sut_result_failure:
+                                return
+
                             response = self._server_response_queue.pop(0)
                             if response.command_parameters.status != 0:
-                                ts_manager_logger.error("Invalid TestServer result: %s, test failed!", response)
-                                print("Test server returned non 0 result: {}".format(response.command_parameters.error_message))
+                                ts_manager_logger.warning("Invalid TestServer result: %s, test failed!", response)
                                 ts_result_failure = True
-                                self._finish_event.set()
                                 return
 
                             ts_manager_logger.info("Received TestServer result: %s", response)
@@ -309,22 +325,25 @@ class TestRunner:
                     send_commands_since_sync = 0
                     received_responses_since_sync = 0
                 ts_last_sync_id = next_ts_command.command_parameters.sync_id
-                while ts_last_sync_id != sut_last_sync_id:
+                while ts_last_sync_id > sut_last_sync_id:
+                    if self._finish_event.is_set() or sut_result_failure:
+                        return
                     time.sleep(0.5)
 
             ts_manager_logger.info("Finished TestServer command enqueuing!")
+            return
 
         sut_thread = threading.Thread(name="SUT queue manager", target=sut_run_manager, args=())
         ts_thread = threading.Thread(name="TestServer queue manager", target=ts_run_manager, args=())
 
-        sut_thread.start()
         ts_thread.start()
+        sut_thread.start()
 
-        sut_thread.join()
+        time.sleep(1)
+        simultaneous_start_event.set()
+
         ts_thread.join()
-
-        self._sut_disconnected_event.clear()
-        self._ts_finished_event.clear()
+        sut_thread.join()
 
         return not sut_result_failure and not ts_result_failure
 

@@ -33,7 +33,7 @@ if __name__ == "__main__":
                     server.logger.info("Received command: %s!", cmd)
                     result = server.execute_command(cmd)
                     await websocket.send(jsonpickle.encode(result))
-        except  asyncio.exceptions.TimeoutError as exc:
+        except asyncio.exceptions.TimeoutError as exc:
             test_server_logger.error("Connection to the TestRunner failed - asyncio timeout")
             sys.exit(-1)
         except OSError as exc:

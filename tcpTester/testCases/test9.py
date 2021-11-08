@@ -5,7 +5,7 @@ from tcpTester.testCommand import (
     SendParameters,
     ReceiveParameters,
     SendReceiveParameters,
-    TestCommand,
+    TestCommand, Command, SyncParameters,
 )
 from tcpTester.config import SUT_IP
 from tcpTester.baseTestCase import BaseTestCase
@@ -24,6 +24,13 @@ class TestNine(BaseTestCase):
 
     def prepare_queues_setup_test(self):
         self.queue_test_setup_ts = [
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
@@ -31,6 +38,13 @@ class TestNine(BaseTestCase):
                     destination=SUT_IP,
                     src_port=PORT_TS,
                     dst_port=PORT_SUT
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
                 )
             ),
             TestCommand(
@@ -43,6 +57,20 @@ class TestNine(BaseTestCase):
                 CommandType['SEND'],
                 SendParameters(flags="A")
             ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=3,
+                    wait_for_result=False
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=4,
+                    wait_for_result=True
+                )
+            ),
         ]
         self.queue_test_setup_sut = [
             TestCommand(
@@ -53,9 +81,37 @@ class TestNine(BaseTestCase):
                     src_port=PORT_SUT
                 )
             ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=3,
+                    wait_for_result=False
+                )
+            ),
             TestCommand(
                 self.test_id,
                 CommandType['DISCONNECT']
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=4,
+                    wait_for_result=True
+                )
             )
         ]
 
@@ -69,5 +125,20 @@ class TestNine(BaseTestCase):
                     ReceiveParameters(flags="A")
                 )
             ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=True
+                )
+            ),
         ]
-        self.queue_test_sut = []
+        self.queue_test_sut = [
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            )
+        ]

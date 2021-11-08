@@ -23,7 +23,7 @@ from tcpTester.testCommand import (
 )
 
 # timeout for the sr1 command (in seconds)
-TIMEOUT = 20
+TIMEOUT = 5
 
 class TestServer(BaseRunner):
     def __init__(self):
