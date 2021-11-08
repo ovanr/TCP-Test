@@ -6,7 +6,7 @@ from typing import Optional, List
 
 from scapy.layers.inet import IP, TCP
 from scapy.packet import Packet, Raw
-from scapy.sendrecv import send, sniff
+from scapy.sendrecv import send, sniff, sr1
 
 from tcpTester.baseRunner import BaseRunner
 from tcpTester.config import TEST_SERVER_INTERFACE
@@ -23,7 +23,7 @@ from tcpTester.testCommand import (
 )
 
 # timeout for the sr1 command (in seconds)
-TIMEOUT = 20
+DEFAULT_TIMEOUT = 20
 
 class TestServer(BaseRunner):
     def __init__(self):
@@ -139,6 +139,7 @@ class TestServer(BaseRunner):
         packets = self._sniff(1, exp_flags=exp_flags, timeout=timeout)
         if not packets:
             return None
+
         [packet] = packets
         self.logger.info("Calculated packet length as %s", TestServer.packet_length(packet))
         self.validate_packet_seq(packet)
@@ -149,19 +150,25 @@ class TestServer(BaseRunner):
 
     def sr(self,
            packet: Packet,
-           exp_flags: Optional[str] = None,
+           timeout: int = DEFAULT_TIMEOUT,
            update_seq: bool = True) -> Packet:
 
-        self.send(packet, update_seq=update_seq)
+        packet = sr1(packet, iface=TEST_SERVER_INTERFACE, timeout=timeout)
+        if update_seq:
+            self.update_sequence_num(packet)
         self.logger.info('first packet sent')
-        ret = self.recv(exp_flags=exp_flags, timeout=TIMEOUT)
-        self.logger.info('packet received')
 
-        if not ret:
-            self.logger.info("timeout reached, could not detect packet with flags %s", exp_flags)
+        if not packet:
+            self.logger.info("timeout reached, could not detect packet ")
             raise UserException("Got no response to packet")
 
-        return ret
+        self.logger.info('packet received')
+
+        self.validate_packet_seq(packet)
+        self.validate_packet_ack(packet)
+        self.update_ack_num(packet)
+
+        return packet
 
     def make_packet(self,
                     payload: Optional[bytes] = None,
