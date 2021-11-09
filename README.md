@@ -13,6 +13,7 @@ This section will go over how to setup and run the testing environment, and how 
 ```
 pip install -r requirements.txt
 ```
+
 ## 1. Where to find and store existing testcases
 In order to find existing testcases, you must first checkout the auto_testing_develop branch. You can do that by the following git command:
 ```
