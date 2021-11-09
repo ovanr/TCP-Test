@@ -8,8 +8,8 @@ from tcpTester.testCommand import (
 )
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 9013
-PORT_SUT = 10013
+PORT_TS = 5013
+PORT_SUT = 6013
 PAYLOAD = b"x" * 100
 
 class TestFourteen(BaseTestCase):

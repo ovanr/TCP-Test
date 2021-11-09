@@ -6,8 +6,8 @@ from tcpTester.testCommand import (
 )
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 9004
-PORT_SUT = 10004
+PORT_TS = 5004
+PORT_SUT = 6004
 
 class TestFive(BaseTestCase):
     @property

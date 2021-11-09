@@ -77,6 +77,6 @@ if __name__ == "__main__":
 
     asyncio.run(
         runner(
-            TestServer(ts_iface=test_server_iface)
+            TestServer(ts_iface=None)
         )
     )

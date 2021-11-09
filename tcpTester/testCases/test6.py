@@ -9,8 +9,8 @@ from tcpTester.testCommand import (
 )
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 9005
-PORT_SUT = 10005
+PORT_TS = 5005
+PORT_SUT = 6005
 
 class TestSix(BaseTestCase):
     def __init__(self, ts_ip, sut_ip):

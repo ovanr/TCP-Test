@@ -9,8 +9,8 @@ from tcpTester.testCommand import (
 )
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 9009
-PORT_SUT = 10009
+PORT_TS = 5009
+PORT_SUT = 6009
 PAYLOAD = b"x" * 100
 EXPECTED_PAYLOAD = b"x" * 300
 

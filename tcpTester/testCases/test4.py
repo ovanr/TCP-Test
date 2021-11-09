@@ -9,8 +9,8 @@ from tcpTester.testCommand import (
 )
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 9003
-PORT_SUT = 10003
+PORT_TS = 5003
+PORT_SUT = 6003
 
 class TestFour(BaseTestCase):
 
