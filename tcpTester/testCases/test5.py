@@ -9,6 +9,7 @@ from tcpTester.baseTestCase import BaseTestCase
 PORT_TS = 5004
 PORT_SUT = 6004
 
+
 class TestFive(BaseTestCase):
     @property
     def test_name(self) -> str:

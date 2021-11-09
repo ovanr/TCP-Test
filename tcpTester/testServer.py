@@ -21,6 +21,7 @@ from tcpTester.testCommand import (
 # timeout for the sr1 command (in seconds)
 TIMEOUT = 5
 
+
 class TestServer(BaseRunner):
     def __init__(self, ts_iface):
         super().__init__()
@@ -284,19 +285,22 @@ class TestServer(BaseRunner):
     def handle_receive_command(self, parameters: ReceiveParameters) -> TestCommand:
         self.logger.info("Receiving packet with expected flags: %s", parameters.flags)
 
-        packet = self.recv(exp_flags=parameters.flags, timeout=parameters.timeout, update_ack=parameters.update_ts_ack)
+        recv_packet = self.recv(
+            exp_flags=parameters.flags,
+            timeout=parameters.timeout,
+            update_ack=parameters.update_ts_ack)
         self.logger.info("Sniffing finished")
 
-        if not packet:
+        if not recv_packet:
             self.logger.warning("no packet received due to timeout")
             raise UserException("Timeout reached")
 
-        TestServer.validate_payload(packet, parameters.payload)
+        TestServer.validate_payload(recv_packet, parameters.payload)
 
         return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["RECEIVE"],
-            description=f"Packet received: {packet.__repr__()}"
+            description=f"Packet received: {recv_packet.__repr__()}"
         ))
 
     def handle_send_receive_command(self, parameters: SendReceiveParameters) -> TestCommand:

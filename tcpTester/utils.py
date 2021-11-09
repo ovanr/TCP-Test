@@ -1,5 +1,5 @@
 import logging
-from logging import Formatter, StreamHandler, INFO, WARNING, DEBUG, ERROR
+from logging import Formatter, StreamHandler, INFO, WARNING
 from logging.handlers import RotatingFileHandler
 
 

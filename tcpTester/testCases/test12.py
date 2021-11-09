@@ -13,6 +13,7 @@ PORT_TS = 5011
 PORT_SUT = 6011
 PAYLOAD = b"x" * 100
 
+
 class TestTwelve(BaseTestCase):
     def __init__(self, ts_ip, sut_ip):
         super().__init__(ts_ip, sut_ip)

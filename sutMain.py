@@ -20,17 +20,17 @@ LOG_PREFIX = "./sut"
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(colored("Please provide one config file via CLI!", "red"))
-        exit(-1)
+        sys.exit(-1)
 
     config = configparser.ConfigParser()
     config.read(sys.argv[1])
 
     if "logging" not in config:
         print(colored("Config file does no contain logging settings!", "red"))
-        exit(-1)
+        sys.exit(-1)
     if "test_runner" not in config:
         print(colored("Config file does no contain test runner settings!", "red"))
-        exit(-1)
+        sys.exit(-1)
 
     try:
 
@@ -39,14 +39,14 @@ if __name__ == "__main__":
                        enable_file_logging=bool(config["logging"]["file_logging"]))
     except KeyError as exc:
         print(colored("Config file does no contain logging settings!", "red"))
-        exit(-1)
+        sys.exit(-1)
 
     try:
         test_runner_ip = config["test_runner"]["ip"]
         test_runner_port = config["test_runner"]["port"]
     except KeyError as exc:
         print(colored("Config file does no contain test runner ip and port setting!", "red"))
-        exit(-1)
+        sys.exit(-1)
 
     async def runner(sut: SUT):
         uri = f"ws://{test_runner_ip}:{test_runner_port}/sut"
@@ -59,13 +59,12 @@ if __name__ == "__main__":
                     sut.logger.info("Received command: %s!", cmd)
                     result = sut.execute_command(cmd)
                     await websocket.send(jsonpickle.encode(result))
-        except OSError as exc:
-            sut.logger.error("Connection to the TestRunner failed - OSError: {}".format(exc.strerror))
+        except OSError as os_err:
+            sut.logger.error("Connection to the TestRunner failed - OSError: {}".format(os_err.strerror))
             sys.exit(-1)
-        except Exception as exc:
-            sut.logger.error("Unexpected error: {}".format(exc))
+        except Exception as err:
+            sut.logger.error("Unexpected error: {}".format(err))
             sys.exit(-2)
-
 
     asyncio.run(
         runner(

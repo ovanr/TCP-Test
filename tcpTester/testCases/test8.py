@@ -12,6 +12,7 @@ from tcpTester.baseTestCase import BaseTestCase
 PORT_TS = 5007
 PORT_SUT = 6007
 
+
 class TestEight(BaseTestCase):
     def __init__(self, ts_ip, sut_ip):
         super().__init__(ts_ip, sut_ip)

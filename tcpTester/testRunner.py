@@ -11,6 +11,7 @@ import websockets
 
 from tcpTester.testCommand import TestCommand, CommandType
 
+
 class TestRunner:
     """
     Implementation of the TestRunner.
@@ -239,12 +240,11 @@ class TestRunner:
                         # Process all available responses
                         while len(self._sut_response_queue) > 0:
                             response: TestCommand = self._sut_response_queue.pop(0)
+                            if self._finish_event.is_set() or ts_result_failure:
+                                return
+
                             if response.command_parameters.status != 0:
-                                if self._finish_event.is_set() or ts_result_failure:
-                                    return
-
                                 sut_manager_logger.warning("Invalid SUT result: %s, test failed!", response)
-
                                 sut_result_failure = True
                                 return
                             sut_manager_logger.info("Received sut result: %s", response)
@@ -380,6 +380,7 @@ class TestRunner:
                 while not self._finish_event.is_set():
                     await asyncio.sleep(0.5)
                 return 0
+
         self._websocket_async_thread = Thread(target=lambda: asyncio.run(task_main()))
         self._websocket_async_thread.start()
 

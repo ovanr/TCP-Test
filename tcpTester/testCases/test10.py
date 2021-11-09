@@ -14,6 +14,7 @@ PORT_SUT = 6009
 PAYLOAD = b"x" * 100
 EXPECTED_PAYLOAD = b"x" * 300
 
+
 class TestTen(BaseTestCase):
     def __init__(self, ts_ip, sut_ip):
         super().__init__(ts_ip, sut_ip)

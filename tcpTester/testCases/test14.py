@@ -12,9 +12,11 @@ PORT_TS = 5013
 PORT_SUT = 6013
 PAYLOAD = b"x" * 100
 
+
 class TestFourteen(BaseTestCase):
     def __init__(self, ts_ip, sut_ip):
         super().__init__(ts_ip, sut_ip)
+
     @property
     def test_name(self) -> str:
         return "Lost packet detection"
@@ -73,7 +75,6 @@ class TestFourteen(BaseTestCase):
                 )
             )
         ]
-
 
     def prepare_queues_test(self):
         self.queue_test_ts = [

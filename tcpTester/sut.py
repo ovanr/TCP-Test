@@ -16,6 +16,7 @@ from tcpTester.testCommand import (
 MAX_READ_SIZE = 4096  # in bytes
 TIMEOUT = 20
 
+
 class SUT(BaseRunner):
 
     def __init__(self):
