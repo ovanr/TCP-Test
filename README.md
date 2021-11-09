@@ -59,4 +59,59 @@ class TestFifteen(BaseTestCase):
     def test_id(self) -> int:
         return 15
 ```
+Further, we have two functions that need to be defined in our TestFifteen class.
+* prepare_queues_setup_test which takes self as parameter. This is used to get the SUT into the state we are testing. It can be left empty.
+    * The body of this function consits of two queues
+    * The self.queue_test_setup_ts queue which contains TestCommands and is responsible for the actions the TS must perform to reach a valid state for testing.
+    * The self.queue_test_setup_sut queue which contains TestCommands and is responsible for the actions the SUT must perform to reach a valid state for testing.
+* prepare_queues_test which also takes self as parameter. This defines the sequence of actions that the TS and SUT shall execute.
+    * The body of this function also consits of two similar queus, which both contain TestCommand objects
+    * The self.queue_test_ts queue
+    * The self.queue_test_sut queue
+An example below:
+```python
+    def prepare_queues_setup_test(self):
+        self.queue_test_setup_ts = []
+        self.queue_test_setup_sut = []
+
+    def prepare_queues_test(self):
+        self.queue_test_ts = []
+        self.queue_test_sut = []
+```
+We fill up these queues with TestCommands. The TestCommands can be found under **tcpTester/testCommand.py**. A test command is like a mini-test, storing information such as timestamp, input, expected output, and the testID which ran it.
+An example of using test commands from testCase 12:
+```python
+    def prepare_queues_setup_test(self):
+        self.queue_test_setup_ts = [
+            # SYNC(id=1, wait_response=False)
+            # WAIT(sec=2)
+            TestCommand(
+                self.test_id,
+                CommandType['CONNECT'],
+                ConnectParameters(destination=SUT_IP, src_port=PORT_TS, dst_port=PORT_SUT)
+            )
+        ]
+        self.queue_test_setup_sut = [
+            TestCommand(
+                self.test_id,
+                CommandType['LISTEN'],
+                ListenParameters(interface=SUT_IP, src_port=PORT_SUT)
+            )
+            # SYNC(id=1, wait_response=False)
+        ]
+
+    def prepare_queues_test(self):
+        self.queue_test_ts = [
+            TestCommand(
+                self.test_id,
+                CommandType['SENDRECEIVE'],
+                SendReceiveParameters(
+                    SendParameters(acknowledgement_number=4294967196, flags="A"),
+                    ReceiveParameters(flags="A")
+                )
+            )
+        ]
+        self.queue_test_sut = []
+```
+
 ## 3. How to run the defined testcases
