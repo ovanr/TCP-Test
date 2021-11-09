@@ -14,5 +14,10 @@ This section will go over how to setup and run the testing environment, and how 
 pip install -r requirements.txt
 ```
 ## 1. Where to find and store existing testcases
+In order to find existing testcases, you must first checkout the auto_testing_develop branch. You can do that by the following git command:
+```
+git checkout auto_testing_develop
+```
+Afterwards you can find the testcases under the folder tcpTester/testCases. Each test case is represented by a python file, following the textX.py format, where X is the number of the test case.
 ## 2. How to write a testcase
 ## 3. How to run the defined testcases
