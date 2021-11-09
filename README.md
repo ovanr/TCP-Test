@@ -36,4 +36,27 @@ from tcpTester.testCommand import (
 from tcpTester.config import TEST_SERVER_IP
 from tcpTester.baseTestCase import BaseTestCase
 ```
+Afterwards, it will be necessary to define the ports for the Test Server (TS) and the  System Under Test (SUT). 
+* Our convention is to use port 6000 + testNumber-1 for the TS port, and 5000 + testNumber-1 for the SUT port. 
+So, given that we made test15.py, and our testNumber is 15, we would get the following:
+```python
+PORT_TS = 6014
+PORT_SUT = 5014
+```
+Then, we must create a class which defines our testcase. This class must be unique compared to the classes in the other test files under testCases. We use the naming convention Test{testNumber to string}. So in our case, TestFifteen.
+* The class must inherit the BaseTestCase class.
+* The class must define two properties, namely
+    * Test name: describes what the test is about in a few words.
+    * Test number: the textNumber we talked about earlier, so 15.
+Thus, we end up with:
+```python
+class TestFifteen(BaseTestCase):
+    @property
+    def test_name(self) -> str:
+        return "Testing testcase creation"
+
+    @property
+    def test_id(self) -> int:
+        return 15
+```
 ## 3. How to run the defined testcases
