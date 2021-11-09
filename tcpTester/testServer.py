@@ -167,9 +167,9 @@ class TestServer(BaseRunner):
 
         self.logger.info('packet received')
 
-        if "R" in exp_flags:
-            self.logger.info("Received package has reset flag. No ACK and SEQ checking.")
-            return recv_packet
+        #if "R" in exp_flags:
+        #    self.logger.info("Received package has reset flag. No ACK and SEQ checking.")
+        #    return recv_packet
 
         self.validate_packet_seq(recv_packet)
         self.validate_packet_ack(recv_packet)
