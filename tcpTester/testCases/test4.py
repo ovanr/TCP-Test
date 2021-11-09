@@ -34,7 +34,11 @@ class TestFour(BaseTestCase):
             TestCommand(
                 self.test_id,
                 CommandType['LISTEN'],
-                ListenParameters(interface=self.ts_ip, src_port=PORT_TS)
+                ListenParameters(
+                    interface=self.ts_ip,
+                    src_port=PORT_TS,
+                    update_ts_ack=False
+                )
             ),
             TestCommand(
                 self.test_id,

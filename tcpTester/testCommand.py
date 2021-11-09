@@ -70,6 +70,7 @@ class ConnectParameters(WithShow):
 class ListenParameters(WithShow):
     interface: str
     src_port: int
+    update_ts_ack: bool = True
 
 
 @dataclass

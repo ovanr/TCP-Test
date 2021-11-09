@@ -209,7 +209,7 @@ class TestServer(BaseRunner):
         self.reset()
 
         self.sport = parameters.src_port
-        packet = self.recv()
+        packet = self.recv(update_ack=parameters.update_ts_ack)
 
         if not packet:
             raise UserException("Listen timed out")
