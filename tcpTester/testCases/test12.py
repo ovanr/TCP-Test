@@ -5,16 +5,19 @@ from tcpTester.testCommand import (
     SendParameters,
     SendReceiveParameters,
     ReceiveParameters,
-    TestCommand,
+    TestCommand, Command, SyncParameters,
 )
-from tcpTester.config import SUT_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6011
-PORT_SUT = 5011
+PORT_TS = 5011
+PORT_SUT = 6011
 PAYLOAD = b"x" * 100
 
+
 class TestTwelve(BaseTestCase):
+    def __init__(self, ts_ip, sut_ip):
+        super().__init__(ts_ip, sut_ip)
+
     @property
     def test_name(self) -> str:
         return "Invalid ACK detection"
@@ -25,21 +28,53 @@ class TestTwelve(BaseTestCase):
 
     def prepare_queues_setup_test(self):
         self.queue_test_setup_ts = [
-            # SYNC(id=1, wait_response=False)
-            # WAIT(sec=2)
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
-                ConnectParameters(destination=SUT_IP, src_port=PORT_TS, dst_port=PORT_SUT)
+                ConnectParameters(
+                    destination=self.sut_ip,
+                    src_port=PORT_TS,
+                    dst_port=PORT_SUT
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
+                )
             )
         ]
         self.queue_test_setup_sut = [
             TestCommand(
                 self.test_id,
                 CommandType['LISTEN'],
-                ListenParameters(interface=SUT_IP, src_port=PORT_SUT)
+                ListenParameters(
+                    interface=self.sut_ip,
+                    src_port=PORT_SUT
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
+                )
             )
-            # SYNC(id=1, wait_response=False)
         ]
 
     def prepare_queues_test(self):
@@ -51,6 +86,22 @@ class TestTwelve(BaseTestCase):
                     SendParameters(acknowledgement_number=4294967196, flags="A"),
                     ReceiveParameters(flags="A")
                 )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=True
+                )
             )
         ]
-        self.queue_test_sut = []
+
+        self.queue_test_sut = [
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            )
+        ]

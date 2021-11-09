@@ -5,15 +5,18 @@ from tcpTester.testCommand import (
     SendReceiveParameters,
     SendParameters,
     ReceiveParameters,
-    TestCommand,
+    TestCommand, Command, SyncParameters,
 )
-from tcpTester.config import TEST_SERVER_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6002
-PORT_SUT = 5002
+PORT_TS = 5002
+PORT_SUT = 6002
+
 
 class TestThree(BaseTestCase):
+    def __init__(self, ts_ip, sut_ip):
+        super().__init__(ts_ip, sut_ip)
+
     @property
     def test_name(self) -> str:
         return "Reply to first SYN with an invalid Ack"
@@ -30,7 +33,7 @@ class TestThree(BaseTestCase):
             TestCommand(
                 self.test_id,
                 CommandType['LISTEN'],
-                ListenParameters(interface=TEST_SERVER_IP, src_port=PORT_TS)
+                ListenParameters(interface=self.ts_ip, src_port=PORT_TS)
             ),
             TestCommand(
                 self.test_id,
@@ -39,15 +42,40 @@ class TestThree(BaseTestCase):
                     SendParameters(acknowledgement_number=543, flags="A"),
                     ReceiveParameters(flags="R")
                 )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
+                )
             )
-            # SYNC(id=1, wait_response=False)
         ]
         self.queue_test_sut = [
-            # SYNC(id=1, wait_response=False)
-            # WAIT(sec=2)
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
-                ConnectParameters(destination=TEST_SERVER_IP, src_port=PORT_SUT, dst_port=PORT_TS)
+                ConnectParameters(destination=self.ts_ip, src_port=PORT_SUT, dst_port=PORT_TS)
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=False
+                )
             )
         ]

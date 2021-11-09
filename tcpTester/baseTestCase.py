@@ -1,5 +1,5 @@
+import logging
 from abc import ABC, abstractmethod
-from logging import info, warning
 from tcpTester.testRunner import TestRunner
 
 
@@ -15,6 +15,22 @@ class BaseTestCase(ABC):
 
     queue_test_sut = []
     queue_test_ts = []
+
+    def __init__(self, ts_ip, sut_ip):
+        self._ts_ip = ts_ip
+        self._sut_ip = sut_ip
+
+    @property
+    def sut_ip(self):
+        return self._sut_ip
+
+    @property
+    def ts_ip(self):
+        return self._ts_ip
+
+    @property
+    def logger(self):
+        return logging.getLogger(self.test_name)
 
     @property
     @abstractmethod
@@ -44,18 +60,18 @@ class BaseTestCase(ABC):
 
         :return: True on success, False otherwise.
         """
-        info("[%s] Preparing setup queues!", self.test_name)
+        self.logger.info("Preparing setup queues!")
         self.prepare_queues_setup_test()
-        info("[%s] Finished setup queues!", self.test_name)
+        self.logger.info("Finished setup queues!")
         runner.server_queue = self.queue_test_setup_ts
         runner.sut_queue = self.queue_test_setup_sut
-        info("[%s] Running test setup!", self.test_name)
+        self.logger.info("Running test setup!")
         if runner.run():
             runner.cleanup()
-            info("[%s] Finished test setup successfully!", self.test_name)
+            self.logger.info("Finished test setup successfully!")
             return True
         runner.cleanup()
-        warning("[%s] Failed to run test setup!", self.test_name)
+        self.logger.warning("Failed to run test setup!")
         return False
 
     def run_test(self, runner: TestRunner):
@@ -66,17 +82,17 @@ class BaseTestCase(ABC):
 
         :return: True on success, False otherwise.
         """
-        info("[%s] Preparing test queues!", self.test_name)
+        self.logger.info("Preparing test queues!")
         self.prepare_queues_test()
-        info("[%s] Finished test queues!", self.test_name)
+        self.logger.info("Finished test queues!")
         runner.server_queue = self.queue_test_ts
         runner.sut_queue = self.queue_test_sut
         if runner.run():
             runner.cleanup()
-            warning("[%s] Running test!", self.test_name)
+            self.logger.warning("Running test!")
             return True
         runner.cleanup()
-        warning("[%s] Finished test!", self.test_name)
+        self.logger.warning("Finished test!")
         return False
 
     @abstractmethod

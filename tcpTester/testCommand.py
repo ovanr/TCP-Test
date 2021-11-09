@@ -3,8 +3,8 @@ from enum import Enum
 from typing import Optional, Union
 from dataclasses import dataclass
 
+DEFAULT_TIMEOUT = 5  # in seconds
 
-DEFAULT_TIMEOUT = 600 # 10 minutes
 
 class UserException(Exception):
     pass
@@ -19,6 +19,8 @@ class CommandType(Enum):
     DISCONNECT = 5
     ABORT = 6
     RESULT = 7
+    SYNC = 8
+    WAIT = 9
 
 
 class WithShow:
@@ -41,11 +43,13 @@ class SendParameters(WithShow):
     flags: Optional[str] = None
     update_ts_seq: bool = True
 
+
 @dataclass
 class ReceiveParameters(WithShow):
     timeout: int = DEFAULT_TIMEOUT
     payload: Optional[bytes] = None
     flags: Optional[str] = None
+    update_ts_ack: bool = True
 
 
 @dataclass
@@ -66,6 +70,7 @@ class ConnectParameters(WithShow):
 class ListenParameters(WithShow):
     interface: str
     src_port: int
+    update_ts_ack: bool = True
 
 
 @dataclass
@@ -76,18 +81,46 @@ class ResultParameters(WithShow):
     error_message: Optional[str] = None
 
 
+@dataclass
+class SyncParameters(WithShow):
+    sync_id: int
+    wait_for_result: bool = False
+
+
+@dataclass
+class WaitParameters(WithShow):
+    seconds: int
+
+
 Parameters = Union[SendParameters,
                    ReceiveParameters,
                    SendReceiveParameters,
                    ConnectParameters,
                    ListenParameters,
                    ResultParameters,
+                   SyncParameters,
+                   WaitParameters,
                    None]
 
 
-@dataclass
-class TestCommand(WithShow):
-    test_number: int
+@dataclass(init=False)
+class Command(WithShow):
     command_type: CommandType
     command_parameters: Parameters = None
+
+    def __init__(self, command_type: CommandType, command_parameters: Parameters = None):
+        self.command_type = command_type
+        self.command_parameters = command_parameters
+
+
+class TestCommand(Command):
+    # pylint: disable=too-few-public-methods
+
+    test_number: int
     timestamp: Optional[int] = None
+
+    def __init__(self, test_number: int, command_type: CommandType, command_parameters: Parameters = None,
+                 timestamp: Optional[int] = None):
+        super().__init__(command_type, command_parameters)
+        self.test_number = test_number
+        self.timestamp = timestamp

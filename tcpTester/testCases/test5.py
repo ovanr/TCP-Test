@@ -2,13 +2,13 @@ from tcpTester.testCommand import (
     CommandType,
     ConnectParameters,
     ListenParameters,
-    TestCommand,
+    TestCommand, Command, SyncParameters,
 )
-from tcpTester.config import SUT_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6004
-PORT_SUT = 5004
+PORT_TS = 5004
+PORT_SUT = 6004
+
 
 class TestFive(BaseTestCase):
     @property
@@ -24,15 +24,27 @@ class TestFive(BaseTestCase):
 
     def prepare_queues_test(self):
         self.queue_test_ts = [
-            # SYNC(id=1, wait_response=False)
-            # WAIT(sec=2)
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
                 ConnectParameters(
-                    destination=SUT_IP,
+                    destination=self.sut_ip,
                     src_port=PORT_TS,
                     dst_port=PORT_SUT
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
                 )
             )
         ]
@@ -41,9 +53,22 @@ class TestFive(BaseTestCase):
                 self.test_id,
                 CommandType['LISTEN'],
                 ListenParameters(
-                    interface=SUT_IP,
+                    interface=self.sut_ip,
                     src_port=PORT_SUT
                 )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=1,
+                    wait_for_result=False
+                )
+            ),
+            Command(
+                CommandType['SYNC'],
+                SyncParameters(
+                    sync_id=2,
+                    wait_for_result=True
+                )
             )
-            # SYNC(id=1, wait_response=False)
         ]
