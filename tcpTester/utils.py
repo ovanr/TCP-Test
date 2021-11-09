@@ -28,6 +28,6 @@ def set_up_logging(log_dir_prefix: str, console_level, enable_file_logging: bool
     exp_errors_file_handler.setFormatter(Formatter(log_file_format))
 
     main_logger.addHandler(console_handler)
-    if not enable_file_logging:
+    if enable_file_logging:
         main_logger.addHandler(exp_file_handler)
         main_logger.addHandler(exp_errors_file_handler)
