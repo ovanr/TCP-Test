@@ -29,6 +29,7 @@ class TestFour(BaseTestCase):
         pass
 
     def prepare_queues_test(self):
+        sequence_no = 1567
         self.queue_test_ts = [
             TestCommand(
                 self.test_id,
@@ -39,14 +40,23 @@ class TestFour(BaseTestCase):
                 self.test_id,
                 CommandType['SENDRECEIVE'],
                 SendReceiveParameters(
-                    SendParameters(flags="S"),
+                    SendParameters(
+                        flags="S",
+                        acknowledgement_number=0,
+                        sequence_number=sequence_no,
+                        update_ts_seq=False),
                     ReceiveParameters(flags="SA")
                 )
             ),
             TestCommand(
                 self.test_id,
-                CommandType["SEND"],
-                SendParameters(flags="SA")
+                CommandType['SENDRECEIVE'],
+                SendReceiveParameters(
+                    SendParameters(
+                        flags="SA",
+                        sequence_number=sequence_no),
+                    ReceiveParameters(flags="A")
+                )
             ),
             Command(
                 CommandType['SYNC'],

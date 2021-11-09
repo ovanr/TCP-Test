@@ -131,7 +131,8 @@ class TestServer(BaseRunner):
 
     def recv(self,
              exp_flags: Optional[str] = None,
-             timeout: Optional[int] = None) -> Optional[Packet]:
+             timeout: Optional[int] = None,
+             update_ack: bool = True) -> Optional[Packet]:
 
         packets = self._sniff(1, exp_flags=exp_flags, timeout=timeout)
         if not packets:
@@ -139,17 +140,24 @@ class TestServer(BaseRunner):
 
         [packet] = packets
         self.logger.info("Calculated packet length as %s", TestServer.packet_length(packet))
+
+        if "R" in exp_flags:
+            self.logger.info("Received package has reset flag. No ACK and SEQ checking.")
+            return packets
+
         self.validate_packet_seq(packet)
         self.validate_packet_ack(packet)
 
-        self.update_ack_num(packet)
+        if update_ack:
+            self.update_ack_num(packet)
         return packet
 
     def sr(self,
            packet: Packet,
            exp_flags: Optional[str] = None,
            timeout: int = DEFAULT_TIMEOUT,
-           update_seq: bool = True) -> Packet:
+           update_seq: bool = True,
+           update_ack: bool = True) -> Packet:
 
         recv_packet = sr1(packet, iface=self.ts_iface, timeout=timeout)
         if update_seq:
@@ -167,13 +175,15 @@ class TestServer(BaseRunner):
 
         self.logger.info('packet received')
 
-        #if "R" in exp_flags:
-        #    self.logger.info("Received package has reset flag. No ACK and SEQ checking.")
-        #    return recv_packet
+        if "R" in exp_flags:
+            self.logger.info("Received package has reset flag. No ACK and SEQ checking.")
+            return recv_packet
 
         self.validate_packet_seq(recv_packet)
         self.validate_packet_ack(recv_packet)
-        self.update_ack_num(recv_packet)
+
+        if update_ack:
+            self.update_ack_num(recv_packet)
 
         return recv_packet
 
@@ -274,7 +284,7 @@ class TestServer(BaseRunner):
     def handle_receive_command(self, parameters: ReceiveParameters) -> TestCommand:
         self.logger.info("Receiving packet with expected flags: %s", parameters.flags)
 
-        packet = self.recv(exp_flags=parameters.flags, timeout=parameters.timeout)
+        packet = self.recv(exp_flags=parameters.flags, timeout=parameters.timeout, update_ack=parameters.update_ts_ack)
         self.logger.info("Sniffing finished")
 
         if not packet:
@@ -304,7 +314,8 @@ class TestServer(BaseRunner):
         ret = self.sr(pkt,
                       exp_flags=parameters.receive_parameters.flags,
                       timeout=parameters.receive_parameters.timeout,
-                      update_seq=parameters.send_parameters.update_ts_seq)
+                      update_seq=parameters.send_parameters.update_ts_seq,
+                      update_ack=parameters.receive_parameters.update_ts_ack)
         self.logger.info("SR completed")
 
         TestServer.validate_payload(ret, parameters.receive_parameters.payload)

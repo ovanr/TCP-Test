@@ -82,7 +82,8 @@ class TestFourteen(BaseTestCase):
                 CommandType['RECEIVE'],
                 ReceiveParameters(
                     payload=PAYLOAD,
-                    flags="A"
+                    flags="A",
+                    update_ts_ack=False
                 )
             ),
             TestCommand(

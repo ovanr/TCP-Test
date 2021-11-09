@@ -49,6 +49,7 @@ class ReceiveParameters(WithShow):
     timeout: int = DEFAULT_TIMEOUT
     payload: Optional[bytes] = None
     flags: Optional[str] = None
+    update_ts_ack: bool = True
 
 
 @dataclass
