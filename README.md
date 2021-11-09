@@ -79,7 +79,7 @@ An example below:
         self.queue_test_sut = []
 ```
 We fill up these queues with TestCommands. The TestCommands can be found under **tcpTester/testCommand.py**. A test command is like a mini-test, storing information such as timestamp, input, expected output, and the testID which ran it.
-An example of using test commands from testCase 12:
+An example of using test commands from testCase 11:
 ```python
     def prepare_queues_setup_test(self):
         self.queue_test_setup_ts = [
