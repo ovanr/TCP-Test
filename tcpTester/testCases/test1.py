@@ -7,13 +7,17 @@ from tcpTester.testCommand import (
     ReceiveParameters,
     TestCommand, Command, SyncParameters,
 )
-from tcpTester.config import TEST_SERVER_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6000
-PORT_SUT = 5000
+PORT_TS = 9000
+PORT_SUT = 10000
+
 
 class TestOne(BaseTestCase):
+
+    def __init__(self, ts_ip, sut_ip):
+        super().__init__(ts_ip, sut_ip)
+
     @property
     def test_name(self) -> str:
         return "Connection establishment with passive host"
@@ -30,7 +34,7 @@ class TestOne(BaseTestCase):
             TestCommand(
                 self.test_id,
                 CommandType['LISTEN'],
-                ListenParameters(interface=TEST_SERVER_IP, src_port=PORT_TS)
+                ListenParameters(interface=self.ts_ip, src_port=PORT_TS)
             ),
             TestCommand(
                 self.test_id,
@@ -68,7 +72,7 @@ class TestOne(BaseTestCase):
                 self.test_id,
                 CommandType['CONNECT'],
                 ConnectParameters(
-                    destination=TEST_SERVER_IP,
+                    destination=self.ts_ip,
                     src_port=PORT_SUT,
                     dst_port=PORT_TS
                 )

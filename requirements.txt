@@ -3,3 +3,4 @@ websockets
 jsonpickle
 asyncio
 termcolor
+configparser

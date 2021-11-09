@@ -6,14 +6,15 @@ from tcpTester.testCommand import (
     ReceiveParameters,
     TestCommand, Command, SyncParameters,
 )
-from tcpTester.config import SUT_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6013
-PORT_SUT = 5013
+PORT_TS = 9013
+PORT_SUT = 10013
 PAYLOAD = b"x" * 100
 
 class TestFourteen(BaseTestCase):
+    def __init__(self, ts_ip, sut_ip):
+        super().__init__(ts_ip, sut_ip)
     @property
     def test_name(self) -> str:
         return "Lost packet detection"
@@ -35,7 +36,7 @@ class TestFourteen(BaseTestCase):
                 self.test_id,
                 CommandType['CONNECT'],
                 ConnectParameters(
-                    destination=SUT_IP,
+                    destination=self.sut_ip,
                     src_port=PORT_TS,
                     dst_port=PORT_SUT
                 )
@@ -53,7 +54,7 @@ class TestFourteen(BaseTestCase):
                 self.test_id,
                 CommandType['LISTEN'],
                 ListenParameters(
-                    interface=SUT_IP,
+                    interface=self.sut_ip,
                     src_port=PORT_SUT
                 )
             ),

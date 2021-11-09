@@ -7,14 +7,16 @@ from tcpTester.testCommand import (
     ReceiveParameters,
     TestCommand, Command, SyncParameters,
 )
-from tcpTester.config import SUT_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6011
-PORT_SUT = 5011
+PORT_TS = 9011
+PORT_SUT = 10011
 PAYLOAD = b"x" * 100
 
 class TestTwelve(BaseTestCase):
+    def __init__(self, ts_ip, sut_ip):
+        super().__init__(ts_ip, sut_ip)
+
     @property
     def test_name(self) -> str:
         return "Invalid ACK detection"
@@ -36,7 +38,7 @@ class TestTwelve(BaseTestCase):
                 self.test_id,
                 CommandType['CONNECT'],
                 ConnectParameters(
-                    destination=SUT_IP,
+                    destination=self.sut_ip,
                     src_port=PORT_TS,
                     dst_port=PORT_SUT
                 )
@@ -54,7 +56,7 @@ class TestTwelve(BaseTestCase):
                 self.test_id,
                 CommandType['LISTEN'],
                 ListenParameters(
-                    interface=SUT_IP,
+                    interface=self.sut_ip,
                     src_port=PORT_SUT
                 )
             ),

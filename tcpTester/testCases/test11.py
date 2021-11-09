@@ -6,15 +6,17 @@ from tcpTester.testCommand import (
     ReceiveParameters,
     TestCommand, Command, SyncParameters,
 )
-from tcpTester.config import SUT_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6010
-PORT_SUT = 5010
+PORT_TS = 9010
+PORT_SUT = 10010
 PAYLOAD = b"x" * 100
 
 
 class TestEleven(BaseTestCase):
+    def __init__(self, ts_ip, sut_ip):
+        super().__init__(ts_ip, sut_ip)
+
     @property
     def test_name(self) -> str:
         return "Sending data segments"
@@ -36,7 +38,7 @@ class TestEleven(BaseTestCase):
                 self.test_id,
                 CommandType['CONNECT'],
                 ConnectParameters(
-                    destination=SUT_IP,
+                    destination=self.sut_ip,
                     src_port=PORT_TS,
                     dst_port=PORT_SUT
                 )
@@ -54,7 +56,7 @@ class TestEleven(BaseTestCase):
                 self.test_id,
                 CommandType['LISTEN'],
                 ListenParameters(
-                    interface=SUT_IP,
+                    interface=self.sut_ip,
                     src_port=PORT_SUT
                 )
             ),

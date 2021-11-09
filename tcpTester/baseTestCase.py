@@ -16,6 +16,18 @@ class BaseTestCase(ABC):
     queue_test_sut = []
     queue_test_ts = []
 
+    def __init__(self, ts_ip, sut_ip):
+        self._ts_ip = ts_ip
+        self._sut_ip = sut_ip
+
+    @property
+    def sut_ip(self):
+        return self._sut_ip
+
+    @property
+    def ts_ip(self):
+        return self._ts_ip
+
     @property
     def logger(self):
         return logging.getLogger(self.test_name)

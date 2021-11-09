@@ -4,11 +4,10 @@ from tcpTester.testCommand import (
     ListenParameters,
     TestCommand, Command, SyncParameters,
 )
-from tcpTester.config import SUT_IP
 from tcpTester.baseTestCase import BaseTestCase
 
-PORT_TS = 6004
-PORT_SUT = 5004
+PORT_TS = 9004
+PORT_SUT = 10004
 
 class TestFive(BaseTestCase):
     @property
@@ -35,7 +34,7 @@ class TestFive(BaseTestCase):
                 self.test_id,
                 CommandType['CONNECT'],
                 ConnectParameters(
-                    destination=SUT_IP,
+                    destination=self.sut_ip,
                     src_port=PORT_TS,
                     dst_port=PORT_SUT
                 )
@@ -53,7 +52,7 @@ class TestFive(BaseTestCase):
                 self.test_id,
                 CommandType['LISTEN'],
                 ListenParameters(
-                    interface=SUT_IP,
+                    interface=self.sut_ip,
                     src_port=PORT_SUT
                 )
             ),

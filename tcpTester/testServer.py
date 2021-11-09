@@ -1,15 +1,10 @@
 #!/usr/bin/env python3
 
-import logging
 from random import randint
-from typing import Optional, List
 
-from scapy.layers.inet import IP, TCP
-from scapy.packet import Packet, Raw
-from scapy.sendrecv import send, sniff, sr1
+from scapy.all import *
 
 from tcpTester.baseRunner import BaseRunner
-from tcpTester.config import TEST_SERVER_INTERFACE
 from tcpTester.testCommand import (
     TestCommand,
     CommandType,
@@ -24,7 +19,7 @@ from tcpTester.testCommand import (
 )
 
 class TestServer(BaseRunner):
-    def __init__(self):
+    def __init__(self, ts_iface):
         super().__init__()
 
         self.logger.info("test server started")
@@ -34,6 +29,7 @@ class TestServer(BaseRunner):
         self.ack = -1
         self.sport = -1
         self.dport = -1
+        self.ts_iface = ts_iface
 
     @property
     def logger(self):
@@ -118,7 +114,7 @@ class TestServer(BaseRunner):
 
         sniff(count=num_packets,
               store=False,
-              iface=TEST_SERVER_INTERFACE,
+              iface=self.ts_iface,
               lfilter=pkt_filter,
               prn=queue.append,
               timeout=timeout)
@@ -152,7 +148,7 @@ class TestServer(BaseRunner):
            timeout: int = DEFAULT_TIMEOUT,
            update_seq: bool = True) -> Packet:
 
-        recv_packet = sr1(packet, iface=TEST_SERVER_INTERFACE, timeout=timeout)
+        recv_packet = sr1(packet, iface=self.ts_iface, timeout=timeout)
         if update_seq:
             self.update_sequence_num(packet)
         self.logger.info('first packet sent')

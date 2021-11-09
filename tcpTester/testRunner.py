@@ -10,8 +10,6 @@ import jsonpickle
 import websockets
 
 from tcpTester.testCommand import TestCommand, CommandType
-from tcpTester.config import TEST_RUNNER_PORT
-
 
 class TestRunner:
     """
@@ -350,7 +348,7 @@ class TestRunner:
     def cleanup(self):
         self.logger.debug("Cleanup! This currently does nothing.")
 
-    def start_runner(self):
+    def start_runner(self, test_runner_port: int):
         # pylint: disable=no-member
         self._sut_connected_event.clear()
         self._ts_started_event.clear()
@@ -378,7 +376,7 @@ class TestRunner:
         async def task_main():
             # pylint: disable=no-member
 
-            async with websockets.serve(router, "", TEST_RUNNER_PORT):  # type: ignore
+            async with websockets.serve(router, "", test_runner_port):  # type: ignore
                 while not self._finish_event.is_set():
                     await asyncio.sleep(0.5)
                 return 0
