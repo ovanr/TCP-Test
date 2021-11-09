@@ -18,6 +18,9 @@ from tcpTester.testCommand import (
     DEFAULT_TIMEOUT
 )
 
+# timeout for the sr1 command (in seconds)
+TIMEOUT = 5
+
 class TestServer(BaseRunner):
     def __init__(self, ts_iface):
         super().__init__()
@@ -82,7 +85,7 @@ class TestServer(BaseRunner):
             self.logger.info("Received future packet with seq %s != %s", packet.seq, self.ack)
             raise UserException(f"Received future packet with seq {packet.seq} != {self.ack}")
 
-        if packet.seq < self.ack:
+        if packet.seq < self.ack - 1:
             self.logger.info("Received past packet with seq %s != %s", packet.seq, self.ack)
             raise UserException(f"Received past packet with seq {packet.seq} != {self.ack}")
 
@@ -163,6 +166,10 @@ class TestServer(BaseRunner):
             raise UserException(f"Received packet with invalid flags {str(missing_flags)}")
 
         self.logger.info('packet received')
+
+        if "R" in exp_flags:
+            self.logger.info("Received package has reset flag. No ACK and SEQ checking.")
+            return recv_packet
 
         self.validate_packet_seq(recv_packet)
         self.validate_packet_ack(recv_packet)

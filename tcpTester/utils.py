@@ -1,5 +1,5 @@
 import logging
-from logging import Formatter, StreamHandler, INFO, WARNING, DEBUG
+from logging import Formatter, StreamHandler, INFO, WARNING, DEBUG, ERROR
 from logging.handlers import RotatingFileHandler
 
 
@@ -9,7 +9,7 @@ def set_up_logging(log_dir_prefix: str, console_level, enable_file_logging: bool
 
     # Main logger
     main_logger = logging.getLogger()
-    main_logger.setLevel(DEBUG)
+    main_logger.setLevel(INFO)
 
     console_handler = StreamHandler()
     console_handler.setLevel(console_level)
