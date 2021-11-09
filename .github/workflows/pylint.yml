@@ -21,5 +21,7 @@ jobs:
           pip install -r requirements.txt
       - name: Analysing the code with pylint
         run: |
-          pylint testRunnerMain.py testServerMain.py sutMain.py tcpTester
+          pylint --rcfile=.pylintrc testRunnerMain.py testServerMain.py sutMain.py tcpTester
+      - name: Analysing the code with pycodestyle
+        run: |
           pycodestyle . --config .pycodestyle

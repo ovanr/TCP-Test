@@ -60,10 +60,10 @@ if __name__ == "__main__":
                     result = sut.execute_command(cmd)
                     await websocket.send(jsonpickle.encode(result))
         except OSError as os_err:
-            sut.logger.error("Connection to the TestRunner failed - OSError: {}".format(os_err.strerror))
+            sut.logger.error("Connection to the TestRunner failed - OSError: %s", os_err.strerror)
             sys.exit(-1)
         except Exception as err:
-            sut.logger.error("Unexpected error: {}".format(err))
+            sut.logger.error("Unexpected error: %s", err)
             sys.exit(-2)
 
     asyncio.run(
