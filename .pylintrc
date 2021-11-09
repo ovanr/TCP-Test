@@ -90,6 +90,13 @@ disable=raw-checker-failed,
         missing-function-docstring,
         missing-module-docstring,
         broad-except,
+        duplicate-code,
+        useless-super-delegation,
+        unused-wildcard-import,
+        redefined-builtin,
+        redefined-outer-name,
+        wildcard-import,
+        undefined-variable,
         too-many-arguments
 
 
@@ -151,14 +158,14 @@ logging-modules=logging
 [BASIC]
 
 # Naming style matching correct argument names.
-argument-naming-style=camelCase
+argument-naming-style=snake_case
 
 # Regular expression matching correct argument names. Overrides argument-
 # naming-style.
 #argument-rgx=
 
 # Naming style matching correct attribute names.
-attr-naming-style=camelCase
+attr-naming-style=snake_case
 
 # Regular expression matching correct attribute names. Overrides attr-naming-
 # style.
@@ -209,7 +216,7 @@ const-naming-style=UPPER_CASE
 docstring-min-length=-1
 
 # Naming style matching correct function names.
-function-naming-style=camelCase
+function-naming-style=snake_case
 
 # Regular expression matching correct function names. Overrides function-
 # naming-style.
@@ -242,7 +249,7 @@ inlinevar-naming-style=any
 #inlinevar-rgx=
 
 # Naming style matching correct method names.
-method-naming-style=camelCase
+method-naming-style=snake_case
 
 # Regular expression matching correct method names. Overrides method-naming-
 # style.
@@ -269,7 +276,7 @@ no-docstring-rgx=^_
 property-classes=abc.abstractproperty
 
 # Naming style matching correct variable names.
-variable-naming-style=camelCase
+variable-naming-style=snake_case
 
 # Regular expression matching correct variable names. Overrides variable-
 # naming-style.
@@ -292,7 +299,7 @@ indent-after-paren=4
 indent-string='    '
 
 # Maximum number of characters on a single line.
-max-line-length=100
+max-line-length=120
 
 # Maximum number of lines in a module.
 max-module-lines=1000
