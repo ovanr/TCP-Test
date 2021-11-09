@@ -85,7 +85,7 @@ class TestServer(BaseRunner):
             self.logger.info("Received future packet with seq %s != %s", packet.seq, self.ack)
             raise UserException(f"Received future packet with seq {packet.seq} != {self.ack}")
 
-        if packet.seq < self.ack - 1:
+        if packet.seq < self.ack:
             self.logger.info("Received past packet with seq %s != %s", packet.seq, self.ack)
             raise UserException(f"Received past packet with seq {packet.seq} != {self.ack}")
 
@@ -238,7 +238,7 @@ class TestServer(BaseRunner):
             ))
 
         self.logger.info("sending first syn")
-        synack = self.sr(syn, exp_flags="SA")
+        synack = self.sr(syn, exp_flags="SA", timeout=TIMEOUT)
         self.logger.info("response is syn/ack")
 
         ack = self.make_packet(flags="A")
@@ -319,7 +319,7 @@ class TestServer(BaseRunner):
         self.logger.info("graceful disconnect from client")
 
         fin = self.make_packet(flags="FA")
-        finack = self.sr(fin, exp_flags="FA")
+        finack = self.sr(fin, exp_flags="FA", timeout=TIMEOUT)
         self.logger.info("send fin packet")
 
         self.logger.info("sending ack")
