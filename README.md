@@ -20,4 +20,20 @@ git checkout auto_testing_develop
 ```
 Afterwards you can find the testcases under the folder tcpTester/testCases. Each test case is represented by a python file, following the textX.py format, where X is the number of the test case.
 ## 2. How to write a testcase
+The previous chapter mentions the directory where tests are made, as well as the naming convention. To create a new testcase we must create a new python file following the naming convention. For the purposes of this tutorial, let's say we make test15.py.
+### Structuring the file
+First we will have to import relevant classes and tools for making a testcase. These imports are the same for any testcase.
+```python
+from tcpTester.testCommand import (
+    CommandType,
+    ConnectParameters,
+    ListenParameters,
+    SendReceiveParameters,
+    SendParameters,
+    ReceiveParameters,
+    TestCommand,
+)
+from tcpTester.config import TEST_SERVER_IP
+from tcpTester.baseTestCase import BaseTestCase
+```
 ## 3. How to run the defined testcases
