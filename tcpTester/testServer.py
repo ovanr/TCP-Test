@@ -141,7 +141,7 @@ class TestServer(BaseRunner):
         [packet] = packets
         self.logger.info("Calculated packet length as %s", TestServer.packet_length(packet))
 
-        if "R" in exp_flags:
+        if exp_flags is not None and "R" in exp_flags:
             self.logger.info("Received package has reset flag. No ACK and SEQ checking.")
             return packet
 
