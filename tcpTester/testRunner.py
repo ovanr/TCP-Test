@@ -376,7 +376,7 @@ class TestRunner:
         async def task_main():
             # pylint: disable=no-member
 
-            async with websockets.serve(router, "", test_runner_port):  # type: ignore
+            async with websockets.serve(router, "", test_runner_port, ping_timeout=None):  # type: ignore
                 while not self._finish_event.is_set():
                     await asyncio.sleep(0.5)
                 return 0

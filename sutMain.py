@@ -52,7 +52,7 @@ if __name__ == "__main__":
         uri = f"ws://{test_runner_ip}:{test_runner_port}/sut"
         # pylint: disable=no-member
         try:
-            async with websockets.connect(uri) as websocket:  # type: ignore
+            async with websockets.connect(uri, ping_timeout=None) as websocket:  # type: ignore
                 while True:
                     recv_data = jsonpickle.decode(await websocket.recv())
                     cmd = cast(TestCommand, recv_data)
