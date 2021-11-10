@@ -8,6 +8,7 @@ from tcpTester.testCommand import (
     ListenParameters,
     ReceiveParameters,
     ResultParameters,
+    DisconnectParameters,
     SendReceiveParameters,
     SendParameters,
     UserException,
@@ -126,7 +127,19 @@ class SUT(BaseRunner):
     def handle_send_receive_command(self, parameters: SendReceiveParameters):
         raise UserException("Unimplemented")
 
-    def handle_disconnect_command(self):
+    def handle_disconnect_command(self, parameters: DisconnectParameters):
+
+        if parameters.half_close and self.client_socket:
+            self.logger.info("half-closing connection")
+
+            self.client_socket.shutdown(socket.SHUT_WR)
+
+            return self.make_result(ResultParameters(
+                status=0,
+                operation=CommandType["DISCONNECT"]
+            ))
+
+
         self.logger.info("disconnecting from client")
         self.reset()
         self.logger.info("disconnect completed")
@@ -138,4 +151,6 @@ class SUT(BaseRunner):
 
     def handle_abort_command(self):
         self.logger.info("aborting from client")
-        return self.handle_disconnect_command()
+        return self.handle_disconnect_command(
+            parameters=DisconnectParameters(half_close=False)
+        )

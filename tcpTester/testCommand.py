@@ -72,6 +72,9 @@ class ListenParameters(WithShow):
     src_port: int
     update_ts_ack: bool = True
 
+@dataclass
+class DisconnectParameters(WithShow):
+    half_close: bool = False
 
 @dataclass
 class ResultParameters(WithShow):
@@ -98,6 +101,7 @@ Parameters = Union[SendParameters,
                    ConnectParameters,
                    ListenParameters,
                    ResultParameters,
+                   DisconnectParameters,
                    SyncParameters,
                    WaitParameters,
                    None]

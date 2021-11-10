@@ -12,6 +12,7 @@ from tcpTester.testCommand import (
     ListenParameters,
     ReceiveParameters,
     ResultParameters,
+    DisconnectParameters,
     SendParameters,
     SendReceiveParameters,
     UserException,
@@ -253,7 +254,7 @@ class TestServer(BaseRunner):
         self.logger.info("response is syn/ack")
 
         ack = self.make_packet(flags="A")
-        send(ack)
+        self.send(ack)
 
         self.logger.info("sent ack")
 
@@ -330,22 +331,26 @@ class TestServer(BaseRunner):
             description=f"Packet received: {ret.__repr__()}"
         ))
 
-    def handle_disconnect_command(self) -> TestCommand:
+    def handle_disconnect_command(self, parameters: DisconnectParameters) -> TestCommand:
         self.logger.info("graceful disconnect from client")
 
         fin = self.make_packet(flags="FA")
-        finack = self.sr(fin, exp_flags="FA", timeout=TIMEOUT)
-        self.logger.info("send fin packet")
 
-        self.logger.info("sending ack")
-        ack = self.make_packet(flags="A")
-        send(ack)
-        self.logger.info("ack send")
+        if parameters.half_close:
+            resp = self.sr(fin, exp_flags="A", timeout=TIMEOUT)
+            self.logger.info("fin packet sent")
+        else:
+            resp = self.sr(fin, exp_flags="FA", timeout=TIMEOUT)
+            self.logger.info("fin packet sent")
+            self.logger.info("sending ack")
+            ack = self.make_packet(flags="A")
+            self.send(ack)
+            self.logger.info("ack send")
 
         return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["DISCONNECT"],
-            description=f"Last Packet received: {finack.__repr__()}"
+            description=f"Last Packet received: {resp.__repr__()}"
         ))
 
     def handle_abort_command(self) -> TestCommand:

@@ -3,6 +3,7 @@ from tcpTester.testCommand import (
     ConnectParameters,
     ListenParameters,
     SendParameters,
+    DisconnectParameters,
     ReceiveParameters,
     SendReceiveParameters,
     TestCommand, Command, SyncParameters,
@@ -107,7 +108,8 @@ class TestNine(BaseTestCase):
             ),
             TestCommand(
                 self.test_id,
-                CommandType['DISCONNECT']
+                CommandType['DISCONNECT'],
+                DisconnectParameters(half_close=True)
             ),
             Command(
                 CommandType['SYNC'],

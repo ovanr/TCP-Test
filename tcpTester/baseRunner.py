@@ -8,6 +8,7 @@ from tcpTester.testCommand import (
     ListenParameters,
     ReceiveParameters,
     ResultParameters,
+    DisconnectParameters,
     SendParameters,
     SendReceiveParameters,
     UserException,
@@ -49,7 +50,7 @@ class BaseRunner(ABC):
             elif cmd.command_type == CommandType["SENDRECEIVE"]:
                 result = self.handle_send_receive_command(cast(SendReceiveParameters, cmd.command_parameters))
             elif cmd.command_type == CommandType["DISCONNECT"]:
-                result = self.handle_disconnect_command()
+                result = self.handle_disconnect_command(cast(DisconnectParameters, cmd.command_parameters))
             elif cmd.command_type == CommandType["ABORT"]:
                 result = self.handle_abort_command()
         except UserException as exception:
@@ -101,7 +102,7 @@ class BaseRunner(ABC):
         pass
 
     @abstractmethod
-    def handle_disconnect_command(self):
+    def handle_disconnect_command(self, parameters: DisconnectParameters):
         pass
 
     @abstractmethod
