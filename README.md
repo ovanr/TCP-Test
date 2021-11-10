@@ -5,7 +5,7 @@ A Black-box testing technique to test the base Linux TCP impementation
 # Setup
 This section will go over how to setup and run the testing environment, and how to create tests of your own. In order to start with the setup, please clone the repository.
 
-## 0. Requirements and installation
+## 1. Requirements and installation
 1.  You will need a linux kernel. The currently tested kernel versions are 5.04 and 5.10, but it is expected that it will work with any kernel version.
 1. In order to run this project, you need at least python version 3.8. The project has been tested with python versions 3.8 and 3.9.
 1. Additionally, you must have pip installed.
@@ -14,7 +14,7 @@ This section will go over how to setup and run the testing environment, and how 
 pip install -r requirements.txt
 ```
 
-## 1. How to write a testcase
+## 2. How to write a testcase
 You can find the existing testcases under the folder **tcpTester/testCases**. Each test case is represented by a python file, following the textX.py format, where X is the number of the test case. To create a new testcase we must create a new python file following the naming convention. For the purposes of this tutorial, let's say we make test15.py.
 ### Structuring the file
 First we will have to import relevant classes and tools for making a testcase. These imports are the same for any testcase.
@@ -178,7 +178,7 @@ An example of using test commands from testCase 11:
             ]
 ```
 
-## 2. How to run the defined testcases
+## 3. How to run the defined testcases
 ### Configuring ini files
 First you would have to configure the **sut.ini**, **test_server.ini** and the **test_runner.ini** files. These ini files contain the prots, the ips, as well as the way logging is done.
 For example, these are the defaults for
