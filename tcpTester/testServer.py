@@ -36,7 +36,7 @@ class TestServer(BaseRunner):
 
         self.logger.info("test server started")
 
-        # Variables used for TCP communication
+        # Variables used for stubbing a communication partner for a TCP endpoint.
         self.ip = None
         self.seq = -1
         self.ack = -1
@@ -336,13 +336,14 @@ class TestServer(BaseRunner):
     def handle_listen_command(self, parameters: ListenParameters) -> TestCommand:
         """
         Handles a TestCommand of type LISTEN.
+        Stubs a TCP endpoint that passively listens for an incoming connection request.
 
         :param parameters: The parameters for the LISTEN command.
 
         :raise UserException: If a timout occurrs while listening for a packet.
         :raise UserException: If the incoming packet does not have the syn (S) flag.
 
-        :return: A TestCommand of type RESULT.
+        :return: A TestCommand of type LISTEN.
         """
         self.logger.info("Listening for Syn packet")
         self.reset()
@@ -371,10 +372,11 @@ class TestServer(BaseRunner):
     def handle_connect_command(self, parameters: ConnectParameters) -> TestCommand:
         """
         Handles a TestCommand of type CONNECT.
+        Stubs the establishment of a new connection with a TCP endpoint.
 
         :param parameters: The parameters for the CONNECT command.
 
-        :return: A TestCommand of type RESULT.
+        :return: A TestCommand of type CONNECT.
         """
         self.logger.info("connecting to %s", parameters.dst_port)
         self.reset()
@@ -411,10 +413,11 @@ class TestServer(BaseRunner):
     def handle_send_command(self, parameters: SendParameters) -> TestCommand:
         """
         Handles a TestCommand of type SEND.
+        Sends a given payload to the TCP endpoint for which the TestServer stubs a communication partner.
 
         :param parameters: The parameters for the SEND command.
 
-        :return: A TestCommand of type RESULT.
+        :return: A TestCommand of type SEND.
         """
         self.logger.info("Sending packet with flags: %s", parameters.flags)
 
@@ -437,12 +440,13 @@ class TestServer(BaseRunner):
     def handle_receive_command(self, parameters: ReceiveParameters) -> TestCommand:
         """
         Handles a TestCommand of type RECEIVE.
+        Receives a single packet from the TCP endpoint for which the TestServer stubs a communication partner.
 
         :param parameters: The parameters for the RECEIVE command.
 
         :raise UserException: If the timeout from the command parameters is reached before a packet is received.
 
-        :return: A TestCommand of type RESULT.
+        :return: A TestCommand of type RECEIVE.
         """
         self.logger.info("Receiving packet with expected flags: %s", parameters.flags)
 
@@ -467,10 +471,12 @@ class TestServer(BaseRunner):
     def handle_send_receive_command(self, parameters: SendReceiveParameters) -> TestCommand:
         """
         Handles a TestCommand of type SENDRECEIVE.
+        Creates a new packet from the TestCommand parameters, sends it to the TCP endpoint for which
+        the TestServer stubs a communication partner and receives the corresponding response packet.
 
         :param parameters: The parameters for the SENDRECEIVE command.
 
-        :return: A TestCommand of type RESULT.
+        :return: A TestCommand of type SENDRECEIVE.
         """
         send_params = parameters.send_parameters
         self.logger.info("Sending packet with flags: %s", send_params.flags)
@@ -501,10 +507,11 @@ class TestServer(BaseRunner):
     def handle_disconnect_command(self, parameters: DisconnectParameters) -> TestCommand:
         """
         Handles a TestCommand of type DISCONNECT.
+        Stubs the nominal sequence for closing the connection with the TCP endpoint for which the TestServer stubs a communication partner.
 
         :param parameters: The parameters for the DISCONNECT command.
 
-        :return: A TestCommand of type RESULT.
+        :return: A TestCommand of type DISCONNECT.
         """
         self.logger.info("graceful disconnect from client")
 
@@ -529,7 +536,7 @@ class TestServer(BaseRunner):
 
     def handle_abort_command(self) -> TestCommand:
         """
-        Aborts the current connection.
+        Stubs the abortion of the connection with the TCP endpoint for which the TestServer stubs a communication partner.
 
         :return: A TestCommand of type ABORT.
         """

@@ -31,9 +31,9 @@ class SUT(BaseRunner):
 
         self.logger.info("SUT started")
 
-        # Socket for communicating with a client
+        # Socket for communicating with another TCP endpoint.
         self.client_socket = None
-        # Socket for connecting with a client
+        # Socket for connecting with another TCP endpoint.
         self.socket = None
 
     @property
@@ -47,7 +47,7 @@ class SUT(BaseRunner):
 
     def reset(self):
         """
-        Resets the sockets.
+        Resets the sockets used to connect to and communicate with another TCP endpoint.
 
         :raise socket_exception: If the socket raised an exception and the clien_socket did not.
 
@@ -77,6 +77,7 @@ class SUT(BaseRunner):
     def handle_connect_command(self, parameters: ConnectParameters):
         """
         Handles a TestCommand of type CONNECT.
+        Establishes a new connection with another TCP endpoint.
 
         :param parameters: The parameters for the CONNECT command.
 
@@ -100,6 +101,7 @@ class SUT(BaseRunner):
     def handle_listen_command(self, parameters: ListenParameters):
         """
         Handles a TestCommand of type LISTEN.
+        Passively listens for an incoming connection request from another TCP endpoint.
 
         :param parameters: The parameters for the LISTEN command.
 
@@ -126,6 +128,7 @@ class SUT(BaseRunner):
     def handle_send_command(self, parameters: SendParameters):
         """
         Handles a TestCommand of type SEND.
+        Sends a given payload to the TCP endpoint with which the SUT is connected.
 
         :param parameters: The parameters for the SEND command.
 
@@ -149,6 +152,7 @@ class SUT(BaseRunner):
     def handle_receive_command(self, parameters: ReceiveParameters):
         """
         Handles a TestCommand of type RECEIVE.
+        Receives a single packet from the TCP endpoint with which the SUT is connected.
 
         :param parameters: The parameters for the RECEIVE command.
 
@@ -193,6 +197,8 @@ class SUT(BaseRunner):
     def handle_disconnect_command(self, parameters: DisconnectParameters):
         """
         Handles a TestCommand of type DISCONNECT.
+        Disconnects the connection between the SUT and the other TCP endpoint.
+        Half closes the connection in case the TestCommand parameters call for it.
 
         :param parameters: The parameters for the DISCONNECT command.
 
@@ -220,7 +226,7 @@ class SUT(BaseRunner):
 
     def handle_abort_command(self):
         """
-        Aborts the current connection.
+        Aborts the current connection with the SUT's communication partner.
 
         :return: A TestCommand of type ABORT.
         """
