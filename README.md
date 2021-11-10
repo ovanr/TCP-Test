@@ -5,7 +5,7 @@ A Black-box testing technique to test the base Linux TCP impementation
 # Setup
 This section will go over how to setup and run the testing environment, and how to create tests of your own. In order to start with the setup, please clone the repository.
 
-## 0. Requirements and installation
+## 1. Requirements and installation
 1.  You will need a linux kernel. The currently tested kernel versions are 5.04 and 5.10, but it is expected that it will work with any kernel version.
 1. In order to run this project, you need at least python version 3.8. The project has been tested with python versions 3.8 and 3.9.
 1. Additionally, you must have pip installed.
@@ -14,14 +14,8 @@ This section will go over how to setup and run the testing environment, and how 
 pip install -r requirements.txt
 ```
 
-## 1. Where to find and store existing testcases
-In order to find existing testcases, you must first checkout the auto_testing_develop branch. You can do that by the following git command:
-```
-git checkout auto_testing_develop
-```
-Afterwards you can find the testcases under the folder tcpTester/testCases. Each test case is represented by a python file, following the textX.py format, where X is the number of the test case.
 ## 2. How to write a testcase
-The previous chapter mentions the directory where tests are made, as well as the naming convention. To create a new testcase we must create a new python file following the naming convention. For the purposes of this tutorial, let's say we make test15.py.
+You can find the existing testcases under the folder **tcpTester/testCases**. Each test case is represented by a python file, following the textX.py format, where X is the number of the test case. To create a new testcase we must create a new python file following the naming convention. For the purposes of this tutorial, let's say we make test15.py.
 ### Structuring the file
 First we will have to import relevant classes and tools for making a testcase. These imports are the same for any testcase.
 ```python
@@ -185,3 +179,76 @@ An example of using test commands from testCase 11:
 ```
 
 ## 3. How to run the defined testcases
+### Configuring ini files
+First you would have to configure the **sut.ini**, **test_server.ini** and the **test_runner.ini** files. These ini files contain the prots, the ips, as well as the way logging is done.
+For example, these are the defaults for
+* Test runner
+```
+[logging]
+console=ERROR
+file_logging=True
+
+[test_runner]
+port=8765
+
+[sut]
+ip=192.168.92.38
+
+[test_server]
+ip=192.168.92.81
+```
+* Test server
+```
+[logging]
+console=ERROR
+file_logging=False
+
+[test_runner]
+ip=192.168.92.38
+port=8765
+
+[test_server]
+iface=en0
+```
+* SUT
+```
+[logging]
+console=ERROR
+file_logging=False
+
+[test_runner]
+ip=192.168.92.38
+port=8765
+```
+
+As can be seen here, by default only test runner does file logging. Additionally, test runner defines an ip and a port number, which is then referenced by both the SUT and the TestServer.
+
+### Running the tests
+We have three applications which we will run in python, in the following order:
+1. testRunnerMain.py
+    * To run testRunnerMain.py, execute the following command, pasing test_runner.ini as argument.
+    ```
+    python3 testRunnerMain.py test_runner.ini
+    ```
+1. testServerMain.py
+    * **If you run testServer on a Linux machine, make sure you execute the following command first.** This is needed to block Reset packets that are emitted by the Linux TCP stack. This can happen because the `scapy` tool emulates a TCP socket and since the linux TCP stack also processes incoming TCP packets it will emit RESET packets because no socket is registered for that port.
+    ```
+    sudo iptables -I OUTPUT -p tcp --tcp-flags RST RST -j DROP
+    ```
+    * To run testServerMain.py, execute the following command, pasing test_server.ini as argument. 
+    ```
+    python3 testServerMain.py test_server.ini
+    ```
+    * **Note if running on a Linux machine, you must run the server using sudo.** The server needs root priviledges because it is accessing the network stack directly via `scapy`.
+    ```
+    sudo python3 testServerMain.py test_server.ini
+    ```
+1. sutMain.py
+    * To run sutMain.py, execute the following command, pasing sut.ini as argument.
+    ```
+    python3 sutMain.py sut.ini
+    ```
+    
+The **testRunner** screen shall output the results of the tests. Additionally, logs are created in the root project directory. As we saw int he ini files, testRunner has file logging enabled by default.
+
+Happy testing!
