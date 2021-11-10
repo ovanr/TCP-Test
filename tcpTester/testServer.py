@@ -24,11 +24,19 @@ TIMEOUT = 5
 
 
 class TestServer(BaseRunner):
+    """
+    Implementation of the TestServer.
+    """
+
     def __init__(self, ts_iface):
+        """
+        Initializes class variables.
+        """
         super().__init__()
 
         self.logger.info("test server started")
 
+        # Variables used for TCP communication
         self.ip = None
         self.seq = -1
         self.ack = -1
@@ -38,22 +46,54 @@ class TestServer(BaseRunner):
 
     @property
     def logger(self):
+        """
+        Returns the logger used for the TestServer.
+
+        :return: The logger for the TestServer.
+        """
         return logging.getLogger("TestServer")
 
     def reset(self) -> None:
+        """
+        Resets the variables that the TestServer uses for TCP communication.
+
+        :return: None
+        """
         self.seq = randint(3000000, 5999999)
         self.ack = -1
         self.sport = -1
         self.dport = -1
 
     def update_sequence_num(self, packet: Packet) -> None:
+        """
+        Updates the sequence number of a given packet.
+
+        :param packet: The packet for which to update the sequence number.
+
+        :return: None
+        """
         self.seq += TestServer.packet_length(packet)
 
     def update_ack_num(self, packet: Packet) -> None:
+        """
+        Updates the acknowledgement number of a given packet.
+
+        :param packet: The packet for which to update the acknowledgement number.
+
+        :return: None
+        """
         self.ack = packet.seq + TestServer.packet_length(packet)
 
     @staticmethod
     def packet_length(packet: Packet) -> int:
+        """
+        Determines the length of a given packet.
+        The Fin (F) and SynAck (S) flags are also counted towards the length in case they are present in the packet.
+
+        :param packet: The packet for which to determine the length.
+
+        :return: The length of the packet.
+        """
         size = 0
         if Raw in packet:
             size = len(packet[Raw].load)
@@ -64,6 +104,14 @@ class TestServer(BaseRunner):
 
     @staticmethod
     def get_missing_flags(packet: Packet, exp_flags: Optional[str]) -> List[str]:
+        """
+        Returns the TCP flags from a given list of expected flags that are not present in a given packet.
+
+        :param packet: The packet for which to get the missing flags.
+        :param exp_flags: The list of expected flags.
+
+        :return: The list of TCP flags that are missing from the packet but present in the list of expected flags.
+        """
         if not exp_flags:
             return []
 
@@ -71,12 +119,28 @@ class TestServer(BaseRunner):
 
     @staticmethod
     def validate_payload(packet: Packet, exp_payload: Optional[bytes] = None) -> None:
+        """
+        Validates that the payload of a given packet is equal to a given expected payload.
+
+        :param packet: The packet of which the payload is validated.
+        :param exp_payload: The expected payload with which the payload of the packet is compared.
+
+        :return: None
+        """
         payload = packet[Raw].load if Raw in packet else b''
         if exp_payload and exp_payload != payload:
             logging.getLogger("PayloadValidator").warning("packet contained incorrect bytes")
             raise UserException(f"Invalid data received: '{payload}'")
 
     def validate_packet_seq(self, packet: Packet) -> None:
+        """
+        Validates the sequence number of a given packet.
+        Raises a UserException in case the packet's sequence number conflicts with its acknowledgement number.
+
+        :param packet: The packet for which to update the sequence number.
+
+        :return: None
+        """
         if self.ack == -1:
             # first packet received in a new connection
             # thus have no previous knowledge about the other
@@ -92,6 +156,14 @@ class TestServer(BaseRunner):
             raise UserException(f"Received past packet with seq {packet.seq} != {self.ack}")
 
     def validate_packet_ack(self, packet: Packet) -> None:
+        """
+        Validates the acknowledgement number of a given packet.
+        Returns a UserExpection in case the packet's acknowledgement number conflicts with its sequence number.
+
+        :param packet: The packet for which to update the acknowledgement number.
+
+        :return: None
+        """
         if self.ack == -1:
             # first packet received in a new connection
             # so the other party does not know our seq
@@ -109,6 +181,16 @@ class TestServer(BaseRunner):
                num_packets: int,
                exp_flags: Optional[str],
                timeout: Optional[int] = None) -> List[Packet]:
+        """
+        Sniffs a given number of packets.
+        Returns a list of the packets that were destined for the TestServer and that have all of the flags from a given list of flags.
+
+        :param num_packets: The number of packets to sniff.
+        :param exp_flags: The list of flags which a packet must have to be included in the result list.
+        :param timeout: Optional timeout. Function stops sniffing if this timeout expires before it is done.
+
+        :return: The list of sniffed packets that have all of the expected flags.
+        """
         queue = []
         self.logger.info("Starting sniffing..")
 
@@ -127,6 +209,14 @@ class TestServer(BaseRunner):
         return queue
 
     def send(self, packet: Packet, update_seq: bool = True) -> None:
+        """
+        Sends a given packet and optionally updates the packet's sequence number afterwards.
+
+        :param packet: The packet to send.
+        :param update_seq: Whether the packet's sequence number should be updated after it is send.
+
+        :return: None
+        """
         send(packet)
         if update_seq:
             self.update_sequence_num(packet)
@@ -135,7 +225,18 @@ class TestServer(BaseRunner):
              exp_flags: Optional[str] = None,
              timeout: Optional[int] = None,
              update_ack: bool = True) -> Optional[Packet]:
+        """
+        Receives and validates a packet that has all of the flags from a given list of flags.
+        Stops waiting for a packet if one doesn't arrive before the given timeout expires.
 
+        :param exp_flags: Optional list of flags, all of which a packet must have.
+        :param timeout: Optional timeout.
+        :param update_ack: Whether the acknowledgement number of the received packet must be updated.
+
+        :return:
+            - The received packet in case one that has all required flags arrives on time.
+            - None otherwise.
+        """
         packets = self._sniff(1, exp_flags=exp_flags, timeout=timeout)
         if not packets:
             return None
@@ -160,7 +261,17 @@ class TestServer(BaseRunner):
            timeout: int = DEFAULT_TIMEOUT,
            update_seq: bool = True,
            update_ack: bool = True) -> Packet:
+        """
+        Sends a packet and then receives and validates the corresponding response packet.
 
+        :param packet: The packet to send.
+        :param exp_flags: Optional list of flags that the response packet should have.
+        :param timeout: Optional timeout. Function stops listening for a response packet in case this timeout expires before one arrives.
+        :param update_seq: (Optional) Whether the sequence number of the incoming response packet should be updated.
+        :param update_ack: (Optional) Whether the acknowledgement number of the incoming response packet should be updated.
+
+        :return: The received response packet.
+        """
         recv_packet = sr1(packet, iface=self.ts_iface, timeout=timeout)
         if update_seq:
             self.update_sequence_num(packet)
@@ -194,7 +305,16 @@ class TestServer(BaseRunner):
                     seq: Optional[int] = None,
                     ack: Optional[int] = None,
                     flags: Optional[str] = None) -> Packet:
+        """
+        Creates a new packet from TCP header properties and payload.
 
+        :param payload: Optional payload for the packet.
+        :param seq: Optional sequence number for the packet.
+        :param ack: Optional acknowledgement number for the packet.
+        :param flags: Optional list of flags for the packet.
+
+        :return: The newly created packet.
+        """
         packet_ack = (0 if self.ack == -1 else self.ack) if ack is None else ack
         pkt = self.ip / TCP(sport=self.sport,
                             dport=self.dport,
@@ -207,6 +327,13 @@ class TestServer(BaseRunner):
         return pkt
 
     def handle_listen_command(self, parameters: ListenParameters) -> TestCommand:
+        """
+        Handles a TestCommand of type LISTEN.
+
+        :param parameters: The parameters for the LISTEN command.
+
+        :return: A TestCommand of type RESULT.
+        """
         self.logger.info("Listening for Syn packet")
         self.reset()
 
@@ -232,6 +359,13 @@ class TestServer(BaseRunner):
         ))
 
     def handle_connect_command(self, parameters: ConnectParameters) -> TestCommand:
+        """
+        Handles a TestCommand of type CONNECT.
+
+        :param parameters: The parameters for the CONNECT command.
+
+        :return: A TestCommand of type RESULT.
+        """
         self.logger.info("connecting to %s", parameters.dst_port)
         self.reset()
 
@@ -265,6 +399,13 @@ class TestServer(BaseRunner):
         ))
 
     def handle_send_command(self, parameters: SendParameters) -> TestCommand:
+        """
+        Handles a TestCommand of type SEND.
+
+        :param parameters: The parameters for the SEND command.
+
+        :return: A TestCommand of type RESULT.
+        """
         self.logger.info("Sending packet with flags: %s", parameters.flags)
 
         pkt = self.make_packet(
@@ -284,6 +425,13 @@ class TestServer(BaseRunner):
         ))
 
     def handle_receive_command(self, parameters: ReceiveParameters) -> TestCommand:
+        """
+        Handles a TestCommand of type RECEIVE.
+
+        :param parameters: The parameters for the RECEIVE command.
+
+        :return: A TestCommand of type RESULT.
+        """
         self.logger.info("Receiving packet with expected flags: %s", parameters.flags)
 
         recv_packet = self.recv(
@@ -305,6 +453,13 @@ class TestServer(BaseRunner):
         ))
 
     def handle_send_receive_command(self, parameters: SendReceiveParameters) -> TestCommand:
+        """
+        Handles a TestCommand of type SENDRECEIVE.
+
+        :param parameters: The parameters for the SENDRECEIVE command.
+
+        :return: A TestCommand of type RESULT.
+        """
         send_params = parameters.send_parameters
         self.logger.info("Sending packet with flags: %s", send_params.flags)
 
@@ -332,6 +487,13 @@ class TestServer(BaseRunner):
         ))
 
     def handle_disconnect_command(self, parameters: DisconnectParameters) -> TestCommand:
+        """
+        Handles a TestCommand of type DISCONNECT.
+
+        :param parameters: The parameters for the DISCONNECT command.
+
+        :return: A TestCommand of type RESULT.
+        """
         self.logger.info("graceful disconnect from client")
 
         fin = self.make_packet(flags="FA")
@@ -354,6 +516,11 @@ class TestServer(BaseRunner):
         ))
 
     def handle_abort_command(self) -> TestCommand:
+        """
+        Aborts the current connection.
+
+        :return: A TestCommand of type ABORT.
+        """
         self.logger.info("aborting connection")
         self.reset()
         self.logger.info("abort done.")
