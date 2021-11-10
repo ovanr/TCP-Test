@@ -226,18 +226,22 @@ As can be seen here, by default only test runner does file logging. Additionally
 ### Running the tests
 We have three applications which we will run in python, in the following order:
 1. testRunnerMain.py
-    * **If you run testRunner on a Linux machine, make sure you execute the following command first**
-    ```
-    sudo iptables -I OUTPUT -p tcp --tcp-flags RST RST -j DROP
-    ```
     * To run testRunnerMain.py, execute the following command, pasing test_runner.ini as argument.
     ```
     python3 testRunnerMain.py test_runner.ini
     ```
 1. testServerMain.py
-    * To run testServerMain.py, execute the following command, pasing test_server.ini as argument.
+    * **If you run testServer on a Linux machine, make sure you execute the following command first.** This is needed to block the linux tcp stack from emitting Reset packets. This can happen because the `scapy` tool 'fakes' a tcp socket and since the linux TCP stack also processes incoming TCP packets it will emit RESET packets because no socket is registered for that port.
+    ```
+    sudo iptables -I OUTPUT -p tcp --tcp-flags RST RST -j DROP
+    ```
+    * To run testServerMain.py, execute the following command, pasing test_server.ini as argument. 
     ```
     python3 testServerMain.py test_server.ini
+    ```
+    * **Note if running on a Linux machine, you must run the server using sudo.** The server needs root priviledges because it is accessing the network stack directly via scapy.
+    ```
+    sudo python3 testServerMain.py test_server.ini
     ```
 1. sutMain.py
     * To run sutMain.py, execute the following command, pasing sut.ini as argument.
