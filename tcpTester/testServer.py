@@ -88,7 +88,7 @@ class TestServer(BaseRunner):
     def packet_length(packet: Packet) -> int:
         """
         Determines the length of a given packet.
-        The Fin (F) and SynAck (S) flags are also counted towards the length in case they are present in the packet.
+        The fin (F) and syn (S) flags are also counted towards the length in case they are present in the packet.
 
         :param packet: The packet for which to determine the length.
 
@@ -125,6 +125,8 @@ class TestServer(BaseRunner):
         :param packet: The packet of which the payload is validated.
         :param exp_payload: The expected payload with which the payload of the packet is compared.
 
+        :raise UserException: If the packet's payload doesn't match the expected payload.
+
         :return: None
         """
         payload = packet[Raw].load if Raw in packet else b''
@@ -135,9 +137,10 @@ class TestServer(BaseRunner):
     def validate_packet_seq(self, packet: Packet) -> None:
         """
         Validates the sequence number of a given packet.
-        Raises a UserException in case the packet's sequence number conflicts with its acknowledgement number.
 
         :param packet: The packet for which to update the sequence number.
+
+        :raise UserException: If the packet's sequence number conflicts with its acknowledgement number.
 
         :return: None
         """
@@ -158,9 +161,10 @@ class TestServer(BaseRunner):
     def validate_packet_ack(self, packet: Packet) -> None:
         """
         Validates the acknowledgement number of a given packet.
-        Returns a UserExpection in case the packet's acknowledgement number conflicts with its sequence number.
 
         :param packet: The packet for which to update the acknowledgement number.
+
+        :raise UserExpection: If the packet's acknowledgement number conflicts with its sequence number.
 
         :return: None
         """
@@ -270,6 +274,9 @@ class TestServer(BaseRunner):
         :param update_seq: (Optional) Whether the sequence number of the incoming response packet should be updated.
         :param update_ack: (Optional) Whether the acknowledgement number of the incoming response packet should be updated.
 
+        :raise UserException: If the timeout is reached before a packet is received.
+        :raise UserException: If the any of the expected flags are missing from the response packet.
+
         :return: The received response packet.
         """
         recv_packet = sr1(packet, iface=self.ts_iface, timeout=timeout)
@@ -331,6 +338,9 @@ class TestServer(BaseRunner):
         Handles a TestCommand of type LISTEN.
 
         :param parameters: The parameters for the LISTEN command.
+
+        :raise UserException: If a timout occurrs while listening for a packet.
+        :raise UserException: If the incoming packet does not have the syn (S) flag.
 
         :return: A TestCommand of type RESULT.
         """
@@ -429,6 +439,8 @@ class TestServer(BaseRunner):
         Handles a TestCommand of type RECEIVE.
 
         :param parameters: The parameters for the RECEIVE command.
+
+        :raise UserException: If the timeout from the command parameters is reached before a packet is received.
 
         :return: A TestCommand of type RESULT.
         """
