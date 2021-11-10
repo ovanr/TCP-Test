@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 from logging import Formatter, StreamHandler, INFO, WARNING
 from logging.handlers import RotatingFileHandler
 
@@ -17,13 +18,15 @@ def set_up_logging(log_dir_prefix: str, console_level, enable_file_logging: bool
     main_logger.addHandler(console_handler)
 
     if enable_file_logging:
-        exp_file_handler = RotatingFileHandler(f'{log_dir_prefix}_debug.log',
+        log_file_prefix = datetime.now().strftime(f'{log_dir_prefix}_%H:%M:%S_%d-%m-%Y')
+
+        exp_file_handler = RotatingFileHandler(f'{log_file_prefix}_debug.log',
                                                maxBytes=10 ** 6,
                                                backupCount=5)
         exp_file_handler.setLevel(INFO)
         exp_file_handler.setFormatter(Formatter(log_file_format))
 
-        exp_errors_file_handler = RotatingFileHandler(f'{log_dir_prefix}_error.log',
+        exp_errors_file_handler = RotatingFileHandler(f'{log_file_prefix}_error.log',
                                                       maxBytes=10 ** 6,
                                                       backupCount=5)
         exp_errors_file_handler.setLevel(WARNING)
