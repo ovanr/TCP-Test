@@ -231,7 +231,7 @@ We have three applications which we will run in python, in the following order:
     python3 testRunnerMain.py test_runner.ini
     ```
 1. testServerMain.py
-    * **If you run testServer on a Linux machine, make sure you execute the following command first.** This is needed to block Reset packets that are emitted by the Linux TCP stack. This can happen because the `scapy` tool emulates a tcp socket and since the linux TCP stack also processes incoming TCP packets it will emit RESET packets because no socket is registered for that port.
+    * **If you run testServer on a Linux machine, make sure you execute the following command first.** This is needed to block Reset packets that are emitted by the Linux TCP stack. This can happen because the `scapy` tool emulates a TCP socket and since the linux TCP stack also processes incoming TCP packets it will emit RESET packets because no socket is registered for that port.
     ```
     sudo iptables -I OUTPUT -p tcp --tcp-flags RST RST -j DROP
     ```
