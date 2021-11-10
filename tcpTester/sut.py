@@ -19,20 +19,40 @@ TIMEOUT = 20
 
 
 class SUT(BaseRunner):
+    """
+    Implementation of the System Under Test (SUT)
+    """
 
     def __init__(self):
+        """
+        Initializes class variables.
+        """
         super().__init__()
 
         self.logger.info("SUT started")
 
+        # Socket for communicating with a client
         self.client_socket = None
+        # Socket for connecting with a client
         self.socket = None
 
     @property
     def logger(self):
+        """
+        Returns the logger used for the SUT
+
+        :return: The logger for the SUT
+        """
         return logging.getLogger("SUT")
 
     def reset(self):
+        """
+        Resets the sockets.
+
+        :raise socket_exception: If the socket raised an exception and the clien_socket did not.
+
+        :return: None
+        """
         client_exception = None
         socket_exception = None
 
@@ -55,6 +75,13 @@ class SUT(BaseRunner):
             raise socket_exception
 
     def handle_connect_command(self, parameters: ConnectParameters):
+        """
+        Handles a TestCommand of type CONNECT.
+
+        :param parameters: The parameters for the CONNECT command.
+
+        :return: A TestCommand of type RESULT.
+        """
         self.logger.info("Attempting to connect to %s", parameters.dst_port)
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -71,6 +98,13 @@ class SUT(BaseRunner):
         ))
 
     def handle_listen_command(self, parameters: ListenParameters):
+        """
+        Handles a TestCommand of type LISTEN.
+
+        :param parameters: The parameters for the LISTEN command.
+
+        :return: A TestCommand of type RESULT.
+        """
         self.logger.info("starting socket on %s", parameters.src_port)
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -90,6 +124,15 @@ class SUT(BaseRunner):
         ))
 
     def handle_send_command(self, parameters: SendParameters):
+        """
+        Handles a TestCommand of type SEND.
+
+        :param parameters: The parameters for the SEND command.
+
+        :raise UserException: If the client_socket is not yet initialized.
+
+        :return: A TestCommand of type RESULT.
+        """
         self.logger.info("sending packet to client")
         if not self.client_socket:
             raise UserException("Not initialized yet")
@@ -104,6 +147,16 @@ class SUT(BaseRunner):
         ))
 
     def handle_receive_command(self, parameters: ReceiveParameters):
+        """
+        Handles a TestCommand of type RECEIVE.
+
+        :param parameters: The parameters for the RECEIVE command.
+
+        :raise UserException: If the client_socket is not yet initialized.
+        :raise UserException: If the parameters specify an expected payload and it is different from the payload of the incoming packet.
+
+        :return: A TestCommand of type RESULT.
+        """
         self.logger.info("receiving packet from client")
         if not self.client_socket:
             raise UserException("Not initialized yet")
@@ -125,10 +178,26 @@ class SUT(BaseRunner):
         ))
 
     def handle_send_receive_command(self, parameters: SendReceiveParameters):
+        """
+        Handles a TestCommand of type SENDRECEIVE.
+        This command is not implemented for the SUT.
+
+        :param parameters: The parameters for the SEND command.
+
+        :raise UserException: Always.
+
+        :return: None
+        """
         raise UserException("Unimplemented")
 
     def handle_disconnect_command(self, parameters: DisconnectParameters):
+        """
+        Handles a TestCommand of type DISCONNECT.
 
+        :param parameters: The parameters for the DISCONNECT command.
+
+        :return: A TestCommand of type RESULT.
+        """
         if parameters.half_close and self.client_socket:
             self.logger.info("half-closing connection")
 
@@ -150,6 +219,11 @@ class SUT(BaseRunner):
         ))
 
     def handle_abort_command(self):
+        """
+        Aborts the current connection.
+
+        :return: A TestCommand of type ABORT.
+        """
         self.logger.info("aborting from client")
         return self.handle_disconnect_command(
             parameters=DisconnectParameters(half_close=False)
