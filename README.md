@@ -226,7 +226,7 @@ As can be seen here, by default only test runner does file logging. Additionally
 ### Running the tests
 We have three applications which we will run in python, in the following order:
 1. testRunnerMain.py
-    * **If you run testRunner on a Linux machine, make sure you execute the following command first
+    * **If you run testRunner on a Linux machine, make sure you execute the following command first**
     ```
     sudo iptables -I OUTPUT -p tcp --tcp-flags RST RST -j DROP
     ```
@@ -244,4 +244,7 @@ We have three applications which we will run in python, in the following order:
     ```
     python3 sutMain.py sut.ini
     ```
+    
+The **testRunner** screen shall output the results of the tests. Additionally, logs are created in the root project directory. As we saw int he ini files, testRunner has file logging enabled by default.
 
+Happy testing!
