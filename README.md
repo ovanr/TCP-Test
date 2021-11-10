@@ -179,3 +179,69 @@ An example of using test commands from testCase 11:
 ```
 
 ## 2. How to run the defined testcases
+### Configuring ini files
+First you would have to configure the **sut.ini**, **test_server.ini** and the **test_runner.ini** files. These ini files contain the prots, the ips, as well as the way logging is done.
+For example, these are the defaults for
+* Test runner
+```
+[logging]
+console=ERROR
+file_logging=True
+
+[test_runner]
+port=8765
+
+[sut]
+ip=192.168.92.38
+
+[test_server]
+ip=192.168.92.81
+```
+* Test server
+```
+[logging]
+console=ERROR
+file_logging=False
+
+[test_runner]
+ip=192.168.92.38
+port=8765
+
+[test_server]
+iface=en0
+```
+* SUT
+```
+[logging]
+console=ERROR
+file_logging=False
+
+[test_runner]
+ip=192.168.92.38
+port=8765
+```
+
+As can be seen here, by default only test runner does file logging. Additionally, test runner defines an ip and a port number, which is then referenced by both the SUT and the TestServer.
+
+### Running the tests
+We have three applications which we will run in python, in the following order:
+1. testRunnerMain.py
+    * **If you run testRunner on a Linux machine, make sure you execute the following command first
+    ```
+    sudo iptables -I OUTPUT -p tcp --tcp-flags RST RST -j DROP
+    ```
+    * To run testRunnerMain.py, execute the following command, pasing test_runner.ini as argument.
+    ```
+    python3 testRunnerMain.py test_runner.ini
+    ```
+1. testServerMain.py
+    * To run testServerMain.py, execute the following command, pasing test_server.ini as argument.
+    ```
+    python3 testServerMain.py test_server.ini
+    ```
+1. sutMain.py
+    * To run sutMain.py, execute the following command, pasing sut.ini as argument.
+    ```
+    python3 sutMain.py sut.ini
+    ```
+
