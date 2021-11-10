@@ -66,9 +66,9 @@ class TestServer(BaseRunner):
 
     def update_sequence_num(self, packet: Packet) -> None:
         """
-        Updates the sequence number of a given packet.
+        Updates the internal sequence number of the TestServer based on a given packet.
 
-        :param packet: The packet for which to update the sequence number.
+        :param packet: The packet from which the new sequence number is to be determined.
 
         :return: None
         """
@@ -76,9 +76,9 @@ class TestServer(BaseRunner):
 
     def update_ack_num(self, packet: Packet) -> None:
         """
-        Updates the acknowledgement number of a given packet.
+        Updates the internal acknowledgement number of the TestServer based on a given packet.
 
-        :param packet: The packet for which to update the acknowledgement number.
+        :param packet: The packet from which the new acknowledgement number is to be determined.
 
         :return: None
         """
@@ -140,7 +140,7 @@ class TestServer(BaseRunner):
 
         :param packet: The packet for which to update the sequence number.
 
-        :raise UserException: If the packet's sequence number conflicts with its acknowledgement number.
+        :raise UserException: If the packet's sequence number conflicts with the TestServer's internal acknowledgement number tracking.
 
         :return: None
         """
@@ -164,7 +164,7 @@ class TestServer(BaseRunner):
 
         :param packet: The packet for which to update the acknowledgement number.
 
-        :raise UserExpection: If the packet's acknowledgement number conflicts with its sequence number.
+        :raise UserExpection: If the packet's acknowledgement number conflicts with the TestServer's internal sequence number tracking.
 
         :return: None
         """
@@ -214,7 +214,7 @@ class TestServer(BaseRunner):
 
     def send(self, packet: Packet, update_seq: bool = True) -> None:
         """
-        Sends a given packet and optionally updates the packet's sequence number afterwards.
+        Sends a given packet and optionally updates the TestServer's internal sequence number afterwards.
 
         :param packet: The packet to send.
         :param update_seq: Whether the packet's sequence number should be updated after it is send.
