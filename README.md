@@ -239,7 +239,7 @@ We have three applications which we will run in python, in the following order:
     ```
     python3 testServerMain.py test_server.ini
     ```
-    * **Note if running on a Linux machine, you must run the server using sudo.** The server needs root priviledges because it is accessing the network stack directly via scapy.
+    * **Note if running on a Linux machine, you must run the server using sudo.** The server needs root priviledges because it is accessing the network stack directly via `scapy`.
     ```
     sudo python3 testServerMain.py test_server.ini
     ```
