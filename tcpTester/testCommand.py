@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional, Union
 from dataclasses import dataclass
 
-DEFAULT_TIMEOUT = 5  # in seconds
+DEFAULT_TIMEOUT = 20  # in seconds
 
 
 class UserException(Exception):

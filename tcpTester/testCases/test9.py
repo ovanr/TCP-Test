@@ -6,7 +6,10 @@ from tcpTester.testCommand import (
     DisconnectParameters,
     ReceiveParameters,
     SendReceiveParameters,
-    TestCommand, Command, SyncParameters,
+    TestCommand, 
+    Command, 
+    SyncParameters, 
+    WaitParameters
 )
 from tcpTester.baseTestCase import BaseTestCase
 from random import randint
@@ -34,6 +37,12 @@ class TestNine(BaseTestCase):
                 SyncParameters(
                     sync_id=1,
                     wait_for_result=False
+                )
+            ),
+            Command(
+                CommandType['WAIT'],
+                WaitParameters(
+                    seconds=2
                 )
             ),
             TestCommand(
@@ -144,7 +153,7 @@ class TestNine(BaseTestCase):
                 CommandType['SYNC'],
                 SyncParameters(
                     sync_id=1,
-                    wait_for_result=False
+                    wait_for_result=True
                 )
             )
         ]

@@ -68,6 +68,11 @@ class TestFour(BaseTestCase):
                     wait_for_result=False
                 )
             ),
+            TestCommand(
+                self.test_id,
+                CommandType['SEND'],
+                SendParameters(flags="A")
+            ),
             Command(
                 CommandType['SYNC'],
                 SyncParameters(
