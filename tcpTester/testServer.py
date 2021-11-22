@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 from random import randint
+from typing import Optional, List
 
 from scapy.all import *
 
@@ -115,7 +116,7 @@ class TestServer(BaseRunner):
         if not exp_flags:
             return []
 
-        return list(filter(lambda f: f not in packet.sprintf("%TCP.flags%"), exp_flags))
+        return list(filter(lambda f: not f in packet.sprintf("%TCP.flags%"), exp_flags)) # type: ignore
 
     @staticmethod
     def validate_payload(packet: Packet, exp_payload: Optional[bytes] = None) -> None:

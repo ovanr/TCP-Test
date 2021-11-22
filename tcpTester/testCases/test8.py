@@ -5,12 +5,16 @@ from tcpTester.testCommand import (
     SendParameters,
     ReceiveParameters,
     SendReceiveParameters,
-    TestCommand, Command, SyncParameters,
+    TestCommand, 
+    Command, 
+    SyncParameters, 
+    DisconnectParameters
 )
 from tcpTester.baseTestCase import BaseTestCase
+from random import randint
 
-PORT_TS = 5007
-PORT_SUT = 6007
+PORT_TS = randint(5000, 50000)
+PORT_SUT = randint(5000, 50000)
 
 
 class TestEight(BaseTestCase):
@@ -116,7 +120,8 @@ class TestEight(BaseTestCase):
             ),
             TestCommand(
                 self.test_id,
-                CommandType['DISCONNECT']
+                CommandType['DISCONNECT'],
+                DisconnectParameters()
             ),
             Command(
                 CommandType['SYNC'],

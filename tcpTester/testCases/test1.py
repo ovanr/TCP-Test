@@ -5,12 +5,13 @@ from tcpTester.testCommand import (
     SendReceiveParameters,
     SendParameters,
     ReceiveParameters,
-    TestCommand, Command, SyncParameters,
+    TestCommand, Command, SyncParameters, WaitParameters
 )
 from tcpTester.baseTestCase import BaseTestCase
+from random import randint
 
-PORT_TS = 5000
-PORT_SUT = 6000
+PORT_TS = randint(5000, 50000)
+PORT_SUT = randint(5000, 50000)
 
 
 class TestOne(BaseTestCase):
@@ -66,6 +67,12 @@ class TestOne(BaseTestCase):
                 SyncParameters(
                     sync_id=1,
                     wait_for_result=False
+                )
+            ),
+            Command(
+                CommandType['WAIT'],
+                WaitParameters(
+                    seconds=2
                 )
             ),
             TestCommand(

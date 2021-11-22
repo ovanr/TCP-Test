@@ -30,6 +30,8 @@ class BaseRunner(ABC):
     def execute_command(self, cmd: TestCommand):
         if cmd.test_number != self._test_number:
             self._test_number = cmd.test_number
+
+        if cmd.test_number == -2:
             try:
                 self.reset()
             except Exception:

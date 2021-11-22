@@ -9,9 +9,10 @@ from tcpTester.testCommand import (
     TestCommand, Command, SyncParameters,
 )
 from tcpTester.baseTestCase import BaseTestCase
+from random import randint
 
-PORT_TS = 5008
-PORT_SUT = 6008
+PORT_TS = randint(5000, 50000)
+PORT_SUT = randint(5000, 50000)
 
 
 class TestNine(BaseTestCase):

@@ -7,9 +7,10 @@ from tcpTester.testCommand import (
     TestCommand, Command, SyncParameters,
 )
 from tcpTester.baseTestCase import BaseTestCase
+from random import randint
 
-PORT_TS = 5013
-PORT_SUT = 6013
+PORT_TS = randint(5000, 50000)
+PORT_SUT = randint(5000, 50000)
 PAYLOAD = b"x" * 100
 
 

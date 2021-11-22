@@ -1,7 +1,7 @@
 import logging
 import threading
 import time
-from typing import List
+from typing import List, cast
 
 import asyncio
 from threading import Thread
@@ -9,7 +9,7 @@ from threading import Thread
 import jsonpickle
 import websockets
 
-from tcpTester.testCommand import TestCommand, CommandType
+from tcpTester.testCommand import TestCommand, CommandType, WaitParameters, SyncParameters, ResultParameters
 
 
 class TestRunner:
@@ -221,7 +221,8 @@ class TestRunner:
                 # WAIT command
                 if next_sut_command.command_type == CommandType.WAIT:
                     sut_manager_logger.info("WAIT command!")
-                    time.sleep(next_sut_command.command_parameters.seconds)
+                    parameters = cast(WaitParameters, next_sut_command.command_parameters)
+                    time.sleep(parameters.seconds)
                     continue
 
                 # Non sync commands
@@ -233,9 +234,10 @@ class TestRunner:
 
                 # Sync commands.
                 sut_manager_logger.info("SYNC command: %s", next_sut_command)
+                parameters = cast(SyncParameters, next_sut_command.command_parameters)
 
                 # Check if we need to wait for the results of previous commands.
-                if next_sut_command.command_parameters.wait_for_result:
+                if parameters.wait_for_result:
                     while received_responses_since_sync < send_commands_since_sync:
                         # Process all available responses
                         while len(self._sut_response_queue) > 0:
@@ -243,7 +245,8 @@ class TestRunner:
                             if self._finish_event.is_set() or ts_result_failure:
                                 return
 
-                            if response.command_parameters.status != 0:
+                            response_parameters = cast(ResultParameters, response.command_parameters)
+                            if response_parameters.status != 0:
                                 sut_manager_logger.warning("Invalid SUT result: %s, test failed!", response)
                                 sut_result_failure = True
                                 return
@@ -251,7 +254,7 @@ class TestRunner:
                             received_responses_since_sync += 1
                     send_commands_since_sync = 0
                     received_responses_since_sync = 0
-                sut_last_sync_id = next_sut_command.command_parameters.sync_id
+                sut_last_sync_id = parameters.sync_id
                 while sut_last_sync_id > ts_last_sync_id:
                     if self._finish_event.is_set() or ts_result_failure:
                         return
@@ -294,7 +297,8 @@ class TestRunner:
                 # WAIT commands
                 if next_ts_command.command_type == CommandType.WAIT:
                     ts_manager_logger.info("WAIT command!")
-                    time.sleep(next_ts_command.command_parameters.seconds)
+                    parameters = cast(WaitParameters, next_ts_command.command_parameters)
+                    time.sleep(parameters.seconds)
                     continue
 
                 # Non SYNC commands.
@@ -305,15 +309,17 @@ class TestRunner:
                     continue
 
                 ts_manager_logger.info("SYNC command: %s", next_ts_command)
+                parameters = cast(SyncParameters, next_ts_command.command_parameters)
 
-                if next_ts_command.command_parameters.wait_for_result:
+                if parameters.wait_for_result:
                     while received_responses_since_sync < send_commands_since_sync:
                         while len(self._server_response_queue) > 0:
+                            response: TestCommand = self._server_response_queue.pop(0)
                             if self._finish_event.is_set() or sut_result_failure:
                                 return
 
-                            response = self._server_response_queue.pop(0)
-                            if response.command_parameters.status != 0:
+                            response_parameters = cast(ResultParameters, response.command_parameters)
+                            if response_parameters.status != 0:
                                 ts_manager_logger.warning("Invalid TestServer result: %s, test failed!", response)
                                 ts_result_failure = True
                                 return
@@ -322,7 +328,7 @@ class TestRunner:
                             received_responses_since_sync += 1
                     send_commands_since_sync = 0
                     received_responses_since_sync = 0
-                ts_last_sync_id = next_ts_command.command_parameters.sync_id
+                ts_last_sync_id = parameters.sync_id
                 while ts_last_sync_id > sut_last_sync_id:
                     if self._finish_event.is_set() or sut_result_failure:
                         return
@@ -346,7 +352,19 @@ class TestRunner:
         return not sut_result_failure and not ts_result_failure
 
     def cleanup(self):
-        self.logger.debug("Cleanup! This currently does nothing.")
+        self.logger.debug("Cleanup started!")
+
+        self._sut_send_queue.append(TestCommand(
+            test_number=-2,
+            command_type=CommandType["ABORT"]
+        ))
+        self._server_send_queue.append(TestCommand(
+            test_number=-2,
+            command_type=CommandType["ABORT"]
+        ))
+        time.sleep(2)
+
+        self.logger.debug("Cleanup finished!")
 
     def start_runner(self, test_runner_port: int):
         # pylint: disable=no-member
@@ -359,7 +377,7 @@ class TestRunner:
                 self._ts_started_event.set()
                 try:
                     await self.ts_queue_management(websocket=websocket)
-                except (websockets.ConnectionClosedError, websockets.ConnectionClosedOK) as exc:
+                except (websockets.ConnectionClosedError, websockets.ConnectionClosedOK) as exc: # type: ignore
                     self.logger.error("TestServer websocket closed: %s!", exc)
                     self._ts_finished_event.set()
                     self._finish_event.set()
@@ -368,7 +386,7 @@ class TestRunner:
                 self._sut_connected_event.set()
                 try:
                     await self.sut_queue_management(websocket=websocket)
-                except (websockets.ConnectionClosedError, websockets.ConnectionClosedOK) as exc:
+                except (websockets.ConnectionClosedError, websockets.ConnectionClosedOK) as exc: # type: ignore
                     self.logger.error("SUT websocket closed: %s!", exc)
                     self._sut_disconnected_event.set()
                     self._finish_event.set()
@@ -386,4 +404,5 @@ class TestRunner:
 
     def finish_runner(self):
         self._finish_event.set()
-        self._websocket_async_thread.join()
+        if self._websocket_async_thread:
+            self._websocket_async_thread.join()
