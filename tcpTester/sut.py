@@ -90,7 +90,17 @@ class SUT(BaseRunner):
         self.socket.bind(("", parameters.src_port))
         self.logger.info("bind successful")
 
-        self.socket.connect((parameters.destination, parameters.dst_port))
+        try:
+            self.socket.connect((parameters.destination, parameters.dst_port))
+        except TimeoutError as e:
+            if parameters.expected_failure:
+                return self.make_result(ResultParameters(
+                    status=0,
+                    operation=CommandType["CONNECT"]
+                ))
+            else:
+                raise e
+
         self.logger.info("connection successful")
 
         return self.make_result(ResultParameters(

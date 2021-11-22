@@ -76,13 +76,13 @@ class TestThree(BaseTestCase):
             TestCommand(
                 self.test_id,
                 CommandType['CONNECT'],
-                ConnectParameters(destination=self.ts_ip, src_port=PORT_SUT, dst_port=PORT_TS)
+                ConnectParameters(destination=self.ts_ip, src_port=PORT_SUT, dst_port=PORT_TS, expected_failure=True)
             ),
             Command(
                 CommandType['SYNC'],
                 SyncParameters(
                     sync_id=2,
-                    wait_for_result=False
+                    wait_for_result=True
                 )
             )
         ]

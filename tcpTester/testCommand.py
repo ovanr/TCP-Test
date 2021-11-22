@@ -64,6 +64,7 @@ class ConnectParameters(WithShow):
     dst_port: int
     src_port: int
     full_handshake: bool = True
+    expected_failure: bool = False
 
 
 @dataclass

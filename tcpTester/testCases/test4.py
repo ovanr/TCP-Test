@@ -99,7 +99,7 @@ class TestFour(BaseTestCase):
                 CommandType['SYNC'],
                 SyncParameters(
                     sync_id=2,
-                    wait_for_result=False
+                    wait_for_result=True
                 )
             )
         ]

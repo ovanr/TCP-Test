@@ -35,7 +35,7 @@ class TestFive(BaseTestCase):
             Command(
                 CommandType['WAIT'],
                 WaitParameters(
-                    seconds=2
+                    seconds=5
                 )
             ),
             TestCommand(
