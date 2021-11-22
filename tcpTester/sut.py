@@ -53,8 +53,8 @@ class SUT(BaseRunner):
 
         :return: None
         """
-        client_exception = None
-        socket_exception = None
+        # client_exception = None
+        # socket_exception = None
 
         # try:
         #     if self.client_socket:
@@ -232,10 +232,8 @@ class SUT(BaseRunner):
         """
         self.logger.info("aborting from client")
         self.reset()
+
         return self.make_result(ResultParameters(
             status=0,
             operation=CommandType["ABORT"]
         ))
-        # return self.handle_disconnect_command(
-        #     parameters=DisconnectParameters(half_close=False)
-        # )
