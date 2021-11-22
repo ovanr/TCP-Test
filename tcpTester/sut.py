@@ -92,7 +92,7 @@ class SUT(BaseRunner):
 
         try:
             self.socket.connect((parameters.destination, parameters.dst_port))
-        except TimeoutError as e:
+        except Exception as e:
             if parameters.expected_failure:
                 return self.make_result(ResultParameters(
                     status=0,
