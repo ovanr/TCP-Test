@@ -28,10 +28,9 @@ class BaseRunner(ABC):
         self._test_number: int = -1
 
     def execute_command(self, cmd: TestCommand):
-        if cmd.test_number != self._test_number and \
-           cmd.test_number != -2:
+        if cmd.test_number != self._test_number:
             self._test_number = cmd.test_number
-
+            self.reset()
 
         result = None
         try:

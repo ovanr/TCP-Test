@@ -354,15 +354,15 @@ class TestRunner:
     def cleanup(self):
         self.logger.debug("Cleanup started!")
 
-        self._sut_send_queue.append(TestCommand(
-            test_number=-2,
-            command_type=CommandType["ABORT"]
-        ))
-        self._server_send_queue.append(TestCommand(
-            test_number=-2,
-            command_type=CommandType["ABORT"]
-        ))
-        time.sleep(5)
+        # self._sut_send_queue.append(TestCommand(
+        #     test_number=-2,
+        #     command_type=CommandType["ABORT"]
+        # ))
+        # self._server_send_queue.append(TestCommand(
+        #     test_number=-2,
+        #     command_type=CommandType["ABORT"]
+        # ))
+        # time.sleep(5)
 
         self.logger.debug("Cleanup finished!")
 
