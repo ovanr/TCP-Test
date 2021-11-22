@@ -546,6 +546,6 @@ class TestServer(BaseRunner):
         self.logger.info("abort done.")
 
         return self.make_result(ResultParameters(
-            status=0,
+            status=1,
             operation=CommandType["ABORT"],
         ))
