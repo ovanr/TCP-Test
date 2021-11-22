@@ -362,7 +362,7 @@ class TestRunner:
             test_number=-2,
             command_type=CommandType["ABORT"]
         ))
-        time.sleep(2)
+        time.sleep(5)
 
         self.logger.debug("Cleanup finished!")
 

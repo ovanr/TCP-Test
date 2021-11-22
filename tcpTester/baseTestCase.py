@@ -67,10 +67,10 @@ class BaseTestCase(ABC):
         runner.sut_queue = self.queue_test_setup_sut
         self.logger.info("Running test setup!")
         if runner.run():
-            runner.cleanup()
+            # runner.cleanup()
             self.logger.info("Finished test setup successfully!")
             return True
-        runner.cleanup()
+        # runner.cleanup()
         self.logger.warning("Failed to run test setup!")
         return False
 
