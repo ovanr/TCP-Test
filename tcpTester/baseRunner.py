@@ -28,14 +28,11 @@ class BaseRunner(ABC):
         self._test_number: int = -1
 
     def execute_command(self, cmd: TestCommand):
-        if cmd.test_number != self._test_number:
+        if cmd.test_number == -2:
+            pass
+        elif cmd.test_number != self._test_number:
             self._test_number = cmd.test_number
 
-        if cmd.test_number == -2:
-            try:
-                self.reset()
-            except Exception:
-                pass
 
         result = None
         try:

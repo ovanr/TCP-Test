@@ -56,23 +56,23 @@ class SUT(BaseRunner):
         client_exception = None
         socket_exception = None
 
-        try:
-            if self.client_socket:
-                self.client_socket.close()
-        except Exception as exception:
-            client_exception = exception
+        # try:
+        #     if self.client_socket:
+        #         self.client_socket.close()
+        # except Exception as exception:
+        #     client_exception = exception
 
-        try:
-            if self.socket:
-                self.socket.close()
-        except Exception as other_exception:
-            socket_exception = other_exception
+        # try:
+        #     if self.socket:
+        #         self.socket.close()
+        # except Exception as other_exception:
+        #     socket_exception = other_exception
 
         self.socket = None
         self.client_socket = None
 
-        if socket_exception and not client_exception:
-            raise socket_exception
+        # if socket_exception and not client_exception:
+        #     raise socket_exception
 
     def handle_connect_command(self, parameters: ConnectParameters):
         """
@@ -231,6 +231,11 @@ class SUT(BaseRunner):
         :return: A TestCommand of type ABORT.
         """
         self.logger.info("aborting from client")
-        return self.handle_disconnect_command(
-            parameters=DisconnectParameters(half_close=False)
-        )
+        self.reset()
+        return self.make_result(ResultParameters(
+            status=0,
+            operation=CommandType["ABORT"]
+        ))
+        # return self.handle_disconnect_command(
+        #     parameters=DisconnectParameters(half_close=False)
+        # )
