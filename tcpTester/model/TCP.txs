@@ -121,7 +121,7 @@ ENDDEF
 
 -- the sut enters passive mode (listens for new connections)
 -- and torXakis attempts to create a connection with it
-STAUTDEF sutPassiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
+STAUTDEF sutPassiveOpenStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
    ::=
         STATE
             qclosed, qlisten, qsynrecv_1, qsynrecv_2, qestablished
@@ -138,7 +138,7 @@ STAUTDEF sutPassiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutU
 ENDDEF
 
 -- the sut enters active mode (Initiates a new connection)
-STAUTDEF sutActiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
+STAUTDEF sutActiveOpenStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
 	::=
 		STATE
 			qclosed, qsynsent_1, qsynsent_2, qestablished_1, qestablished_2
@@ -170,8 +170,6 @@ STAUTDEF sutPassiveCloseStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; I
 			qlastack_1 -> OutSutNet ! fin(st_src_port, st_dst_port) -> qlastack_2
 			qlastack_2 -> InSutNet ? a [[ (dport(a) == st_src_port) /\ isAck(a) ]] { st_dst_port := sport(a) } -> qclosed
 			qclosed -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qclosed
-			
-			
 ENDDEF
 
 -- the sut enters active mode (Initiates a close of the connection)
@@ -203,7 +201,7 @@ MODELDEF  TCP
         CHAN IN OutSutUser, OutSutNet 
         CHAN OUT InSutNet, InSutUser
 
-        BEHAVIOUR sutActiveCloseStaut [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ()
+        BEHAVIOUR sutPassiveOpenStaut [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ()
 ENDDEF
 
 
