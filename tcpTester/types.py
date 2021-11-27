@@ -6,6 +6,17 @@ from copy import deepcopy
 
 DEFAULT_TIMEOUT = 20  # in seconds
 
+class WithShow:
+    def __str__(self):
+        state = deepcopy(self.__dict__)
+        for k, v in state.items():
+            if hasattr(v, '__str__'):
+                state[k] = v.__str__()
+        return str(state)
+
+    def __repr__(self):
+        return self.__str__()
+
 class ParseException(Exception):
     pass
 
@@ -19,16 +30,23 @@ class CommandType(Enum):
     RECEIVE = 3
     CLOSE = 4
 
-class WithShow:
-    def __str__(self):
-        state = deepcopy(self.__dict__)
-        for k, v in state.items():
-            if hasattr(v, '__str__'):
-                state[k] = v.__str__()
-        return str(state)
+class UserCallResultType(Enum):
+    SUCCESS = 0
+    FAILURE = 1
+    RECEIVE = 2
 
-    def __repr__(self):
-        return self.__str__()
+    @staticmethod
+    def from_torxakis(structure: str):
+        return UserCallResultType[structure.rstrip().lstrip()]
+
+    def to_torxakis(self):
+        return self.name
+
+@dataclass
+class UserCall(WithShow):
+    command_type: CommandType
+    command_parameters: Parameters = None
+
 
 class SEQ(Enum):
     SEQ_VALID = "SEQ_VALID"
@@ -64,6 +82,37 @@ class TCPFlag(Enum):
 
     def to_torxakis(self):
         return self.name
+
+@dataclass
+class UserCallResult(WithShow):
+    status: UserCallResultType
+    payload: Optional[bytes]
+
+    def to_torxakis(self):
+        status = self.status.to_torxakis()
+        payload = "" if not self.payload else self.payload.decode()
+
+        if self.status in [UserCallResultType.SUCCESS, UserCallResultType.FAILURE]:
+            return status
+
+        return f"{status}({payload})"
+
+@dataclass
+class SendParameters(WithShow):
+    payload: bytes
+
+@dataclass
+class ListenParameters(WithShow):
+    src_port: int
+
+@dataclass
+class ConnectParameters(WithShow):
+    dst_port: int
+
+Parameters = Union[ListenParameters,
+                   ConnectParameters,
+                   SendParameters,
+                   None]
 
 @dataclass
 class TCPPacket(WithShow):
@@ -122,34 +171,3 @@ class TCPPacket(WithShow):
         payload = self.payload.decode()
         return f"TCPPacket({self.sport}, {self.dport}, {self.seq}, {self.ack}, {flags}, {payload}"
 
-class UserCallResultType(Enum):
-    SUCCESS = 0
-    FAILURE = 1
-    RECEIVE = 2
-
-@dataclass
-class UserCallResult(WithShow):
-    status: UserCallResultType
-    payload: Optional[bytes]
-
-@dataclass
-class SendParameters(WithShow):
-    payload: bytes
-
-@dataclass
-class ListenParameters(WithShow):
-    src_port: int
-
-@dataclass
-class ConnectParameters(WithShow):
-    dst_port: int
-
-Parameters = Union[ListenParameters,
-                   ConnectParameters,
-                   SendParameters,
-                   None]
-
-@dataclass
-class UserCall(WithShow):
-    command_type: CommandType
-    command_parameters: Parameters = None

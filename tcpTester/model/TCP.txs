@@ -20,7 +20,7 @@ ENDDEF
 TYPEDEF TCPUserCallOutput ::= 
     SUCCESS
     | FAILURE
-    | RECEIVEOUTPUT { rpayload :: String }
+    | RECEIVE { rpayload :: String }
 ENDDEF
 
 TYPEDEF TCPPacket ::= TCPPacket { 
