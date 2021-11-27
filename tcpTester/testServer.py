@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
 from random import randint
+from struct import pack
+from sys import flags
 from typing import Optional, List
 
 from scapy.all import *
 
-from tcpTester.types import ACK, SEQ, TCPPacket, DEFAULT_TIMEOUT
-
-# timeout for the sr1 command (in seconds)
-TIMEOUT = 5
+from tcpTester.types import ACK, SEQ, TCPPacket
 
 class TestServer:
     """
@@ -95,7 +94,7 @@ class TestServer:
                 size += 1
         return size
 
-    def validate_packet_seq(self, packet: Packet) -> None:
+    def validate_packet_seq(self, packet: Packet) -> bool:
         """
         Validates the sequence number of a given packet.
 
@@ -109,17 +108,17 @@ class TestServer:
             # first packet received in a new connection
             # thus have no previous knowledge about the other
             # party's seq value
-            return
+            return True
 
         if packet.seq > self.ack:
             self.logger.info("Received future packet with seq %s != %s", packet.seq, self.ack)
-            raise UserException(f"Received future packet with seq {packet.seq} != {self.ack}")
-
+            return False
         if packet.seq < self.ack:
             self.logger.info("Received past packet with seq %s != %s", packet.seq, self.ack)
-            raise UserException(f"Received past packet with seq {packet.seq} != {self.ack}")
+            return False
+        return True
 
-    def validate_packet_ack(self, packet: Packet) -> None:
+    def validate_packet_ack(self, packet: Packet) -> bool:
         """
         Validates the acknowledgement number of a given packet.
 
@@ -132,15 +131,17 @@ class TestServer:
         if self.ack == -1:
             # first packet received in a new connection
             # so the other party does not know our seq
-            return
+            return True
 
         if packet.ack > self.seq:
             self.logger.info("Received packet with future ack %s != %s", packet.ack, self.seq)
-            raise UserException(f"Received packet with future ack {packet.ack} != {self.seq}")
+            return False
 
         if packet.ack < self.seq:
             self.logger.info("Received packet with past ack %s != %s", packet.ack, self.seq)
-            raise UserException(f"Received packet with past ack {packet.ack} != {self.seq}")
+            return False
+        return True
+
 
     def start_bg_sniffer(self, timeout: Optional[int] = None) -> List[Packet]:
         """
@@ -163,7 +164,7 @@ class TestServer:
             store=False,
             iface=self.ts_iface,
             lfilter=pkt_filter,
-            prn=lambda p: print(p.__repr__()),
+            prn=lambda p: self.handle_receive_command(p),
             timeout=timeout)
 
         self.bg_sniffer.start()
@@ -185,88 +186,7 @@ class TestServer:
         send(packet)
         if update_seq:
             self.update_sequence_num(packet)
-
-    def recv(self,
-             exp_flags: Optional[str] = None,
-             timeout: Optional[int] = None,
-             update_ack: bool = True) -> Optional[Packet]:
-        """
-        Receives and validates a packet that has all of the flags from a given list of flags.
-        Stops waiting for a packet if one doesn't arrive before the given timeout expires.
-
-        :param exp_flags: Optional list of flags, all of which a packet must have.
-        :param timeout: Optional timeout.
-        :param update_ack: Whether the acknowledgement number of the received packet must be updated.
-
-        :return:
-            - The received packet in case one that has all required flags arrives on time.
-            - None otherwise.
-        """
-        packets = self._sniff(1, exp_flags=exp_flags, timeout=timeout)
-        if not packets:
-            return None
-
-        [packet] = packets
-        self.logger.info("Calculated packet length as %s", TestServer.packet_length(packet))
-
-        if exp_flags is not None and "R" in exp_flags:
-            self.logger.info("Received package has reset flag. No ACK and SEQ checking.")
-            return packet
-
-        self.validate_packet_seq(packet)
-        self.validate_packet_ack(packet)
-
-        if update_ack:
-            self.update_ack_num(packet)
-        return packet
-
-    def sr(self,
-           packet: Packet,
-           exp_flags: Optional[str] = None,
-           timeout: int = DEFAULT_TIMEOUT,
-           update_seq: bool = True,
-           update_ack: bool = True) -> Packet:
-        """
-        Sends a packet and then receives and validates the corresponding response packet.
-
-        :param packet: The packet to send.
-        :param exp_flags: Optional list of flags that the response packet should have.
-        :param timeout: Optional timeout. Function stops listening for a response packet in case this timeout expires before one arrives.
-        :param update_seq: (Optional) Whether the sequence number of the incoming response packet should be updated.
-        :param update_ack: (Optional) Whether the acknowledgement number of the incoming response packet should be updated.
-
-        :raise UserException: If the timeout is reached before a packet is received.
-        :raise UserException: If the any of the expected flags are missing from the response packet.
-
-        :return: The received response packet.
-        """
-        recv_packet = sr1(packet, iface=self.ts_iface, timeout=timeout)
-        if update_seq:
-            self.update_sequence_num(packet)
-        self.logger.info('first packet sent')
-
-        if not recv_packet:
-            self.logger.info("timeout reached, could not detect packet ")
-            raise UserException("Got no response to packet")
-
-        missing_flags = self.get_missing_flags(recv_packet, exp_flags=exp_flags)
-        if missing_flags:
-            self.logger.info('packet received with missing flags: %s', missing_flags)
-            raise UserException(f"Received packet with invalid flags {str(missing_flags)}")
-
-        self.logger.info('packet received')
-
-        if "R" in exp_flags:
-            self.logger.info("Received package has reset flag. No ACK and SEQ checking.")
-            return recv_packet
-
-        self.validate_packet_seq(recv_packet)
-        self.validate_packet_ack(recv_packet)
-
-        if update_ack:
-            self.update_ack_num(recv_packet)
-
-        return recv_packet
+        
 
     def make_packet(self,
                     payload: Optional[bytes] = None,
@@ -329,7 +249,7 @@ class TestServer:
         self.send(pkt, update_seq=True)
         self.logger.info("Packet was sent")
 
-    def handle_receive_command(self, parameters):
+    def handle_receive_command(self, packet):
         """
         Handles a TestCommand of type RECEIVE.
         Receives a single packet from the TCP endpoint for which the TestServer stubs a communication partner.
@@ -340,22 +260,26 @@ class TestServer:
 
         :return: A TestCommand of type RECEIVE.
         """
-        self.logger.info("Receiving packet with expected flags: %s", parameters.flags)
+        
+        
+        if self.validate_packet_seq(packet):
+            seq_status = SEQ.SEQ_VALID
+        else:
+            seq_status = SEQ.SEQ_INVALID
 
-        recv_packet = self.recv(
-            exp_flags=parameters.flags,
-            timeout=parameters.timeout,
-            update_ack=parameters.update_ts_ack)
-        self.logger.info("Sniffing finished")
+        if self.validate_packet_ack(packet):
+            ack_status = ACK.ACK_VALID
+        else:
+            ack_status = ACK.ACK_INVALID
 
-        if not recv_packet:
-            self.logger.warning("no packet received due to timeout")
-            raise UserException("Timeout reached")
+        if ack_status == ACK.ACK_VALID and seq_status == SEQ.SEQ_VALID:
+            self.update_ack_num(packet)
 
-        TestServer.validate_payload(recv_packet, parameters.payload)
-
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["RECEIVE"],
-            description=f"Packet received: {recv_packet.__repr__()}"
-        ))
+        return TCPPacket(
+            sport=packet["TCP"].sport,
+            dport=packet["TCP"].dport,
+            seq=seq_status,
+            ack=ack_status,
+            flags=packet["flags"],
+            payload=packet[Raw].load
+        )
