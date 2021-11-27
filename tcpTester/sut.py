@@ -2,7 +2,7 @@ import logging
 import socket
 import random
 
-from tcpTester.testCommand import (
+from tcpTester.types import (
     CommandType,
     ConnectParameters,
     ListenParameters,

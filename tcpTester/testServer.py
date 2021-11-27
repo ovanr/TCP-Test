@@ -5,7 +5,7 @@ from typing import Optional, List
 
 from scapy.all import *
 
-from tcpTester.types import ACK, SEQ, TCPPacket
+from tcpTester.types import ACK, SEQ, TCPPacket, DEFAULT_TIMEOUT
 
 # timeout for the sr1 command (in seconds)
 TIMEOUT = 5
@@ -329,7 +329,7 @@ class TestServer:
         self.send(pkt, update_seq=True)
         self.logger.info("Packet was sent")
 
-    def handle_receive_command(self, parameters: ReceiveParameters) -> TestCommand:
+    def handle_receive_command(self, parameters):
         """
         Handles a TestCommand of type RECEIVE.
         Receives a single packet from the TCP endpoint for which the TestServer stubs a communication partner.
