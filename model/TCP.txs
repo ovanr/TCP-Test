@@ -20,6 +20,7 @@ ENDDEF
 TYPEDEF TCPUserCallOutput ::= 
     LISTENSUCCESS
     | CONNECTSUCCESS
+	| CLOSESUCCESS
     | RECEIVEOUTPUT { rpayload :: String }
 ENDDEF
 
@@ -97,6 +98,12 @@ FUNCDEF isAck ( t :: TCPPacket ) :: Bool ::=
     (ack(t) == ACK_VALID)
 ENDDEF
 
+FUNCDEF isFin ( t :: TCPPacket ) :: Bool ::=
+    (flags(t) == CONS(FIN, NIL)) /\
+    (seq(t) == SEQ_VALID) /\
+    (ack(t) == ACK_VALID)
+ENDDEF
+
 FUNCDEF synack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
     TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, CONS(SYN, NIL)), "")
 ENDDEF
@@ -107,6 +114,10 @@ ENDDEF
 
 FUNCDEF ack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
     TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, NIL), "")
+ENDDEF
+
+FUNCDEF fin ( sport :: Int; dport :: Int ) :: TCPPacket ::=
+    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(FIN, NIL), "")
 ENDDEF
 
 -- the sut enters passive mode (listens for new connections)
@@ -127,6 +138,7 @@ STAUTDEF sutPassiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutU
             qestablished -> OutSutUser ? r [[ isCONNECTSUCCESS(r) ]] -> qclosed
 ENDDEF
 
+-- the sut enters active mode (Initiates a new connection)
 STAUTDEF sutActiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
 	::=
 		STATE
@@ -142,6 +154,25 @@ STAUTDEF sutActiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUs
 			qestablished_1 -> OutSutNet ! ack(st_src_port, st_dst_port) -> qestablished_2
 			qestablished_2 -> OutSutUser ? r [[ isCONNECTSUCCESS(r) ]] -> qclosed
 ENDDEF
+
+-- the sut enters active mode (Initiates a a close of the connection)
+STAUTDEF sutActiveCloseStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
+	::=
+		STATE
+			qestablished, qfinwait1_1, qfinwait1_2, qfinwait2, qtimewait_1, qtimewait_2, qclosed
+		VAR
+			st_src_port :: Int; st_dst_port :: Int
+		INIT
+			qestablished { st_src_port := 0; st_dst_port := 0 }
+		TRANS
+			qestablished -> InSutUser ? c [[ isCLOSE(c) ]] -> qfinwait1_1
+			qfinwait1_1 -> OutSutNet ! fin(st_src_port, st_dst_port) -> qfinwait1_2
+			qfinwait1_2 -> InSutNet ? a [[ (dport(a) == st_src_port) /\ isAck(a) ]] { st_dst_port := sport(a) } -> qfinwait2
+			qfinwait2 -> InSutNet ? f [[ (dport(f) == st_src_port) /\ isFin(f) ]] { st_dst_port := sport(f) } -> qtimewait_1
+			qtimewait_1 -> OutSutNet ! ack(st_src_port, st_dst_port) -> qtimewait_2
+			qtimewait_2 -> OutSutUser ? r [[ isCLOSESUCCESS(r) ]] -> qtimewait_2
+ENDDEF
+
 
 -- model definition for the TCP system
 --   declaring channel InSutNet as input channel  (SUT system point of view)
