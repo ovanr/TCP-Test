@@ -66,10 +66,10 @@ class ACK(Enum):
         return self.name
 
 class TCPFlag(Enum):
-    SYN = "SYN"
-    ACK = "ACK"
-    FIN = "FIN"
-    RST = "RST"
+    ACK = "A"
+    FIN = "F"
+    RST = "R"
+    SYN = "S"
 
     @staticmethod
     def from_torxakis(structure: str):

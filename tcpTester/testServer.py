@@ -1,25 +1,22 @@
 #!/usr/bin/env python3
 
 from random import randint
-from struct import pack
-from sys import flags
 from typing import Optional, List
 
 from scapy.all import *
+from scapy.layers.inet import TCP
 
-from tcpTester.types import ACK, SEQ, TCPPacket
+from tcpTester.types import ACK, SEQ, TCPPacket, TCPFlag
 
 class TestServer:
     """
     Implementation of the TestServer.
     """
 
-    def __init__(self, ts_iface, mbt_port: int):
+    def __init__(self, ts_iface, mbt_client: socket.socket):
         """
         Initializes class variables.
         """
-        super().__init__()
-
         self.logger.info("test server started")
 
         # Variables used for stubbing a communication partner for a TCP endpoint.
@@ -31,10 +28,8 @@ class TestServer:
         self.ts_iface = ts_iface
         self.bg_sniffer = None
 
-        self.mbt_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.mbt_server.bind(("", mbt_port))
-        self.mbt_server.listen(1)
-        (self.mbt_client, _) = self.mbt_server.accept()
+        self.mbt_client = mbt_client
+        self.start_bg_sniffer()
 
     @property
     def logger(self):
@@ -51,7 +46,7 @@ class TestServer:
 
         :return: None
         """
-        self.seq = randint(3000000, 5999999)
+        self.seq = randint(3000000, 4999999)
         self.ack = -1
         self.sport = -1
         self.dport = -1
@@ -59,20 +54,12 @@ class TestServer:
     def update_sequence_num(self, packet: Packet) -> None:
         """
         Updates the internal sequence number of the TestServer based on a given packet.
-
-        :param packet: The packet from which the new sequence number is to be determined.
-
-        :return: None
         """
         self.seq += TestServer.packet_length(packet)
 
     def update_ack_num(self, packet: Packet) -> None:
         """
         Updates the internal acknowledgement number of the TestServer based on a given packet.
-
-        :param packet: The packet from which the new acknowledgement number is to be determined.
-
-        :return: None
         """
         self.ack = packet.seq + TestServer.packet_length(packet)
 
@@ -97,12 +84,6 @@ class TestServer:
     def validate_packet_seq(self, packet: Packet) -> bool:
         """
         Validates the sequence number of a given packet.
-
-        :param packet: The packet for which to update the sequence number.
-
-        :raise UserException: If the packet's sequence number conflicts with the TestServer's internal acknowledgement number tracking.
-
-        :return: None
         """
         if self.ack == -1:
             # first packet received in a new connection
@@ -113,20 +94,20 @@ class TestServer:
         if packet.seq > self.ack:
             self.logger.info("Received future packet with seq %s != %s", packet.seq, self.ack)
             return False
+
         if packet.seq < self.ack:
+            if packet.seq + TestServer.packet_length(packet) == self.ack:
+                # duplicate packet
+                self.logger.info("Got duplicate packet %s != %s", packet.seq, self.ack)
+                return True
             self.logger.info("Received past packet with seq %s != %s", packet.seq, self.ack)
             return False
+
         return True
 
     def validate_packet_ack(self, packet: Packet) -> bool:
         """
         Validates the acknowledgement number of a given packet.
-
-        :param packet: The packet for which to update the acknowledgement number.
-
-        :raise UserExpection: If the packet's acknowledgement number conflicts with the TestServer's internal sequence number tracking.
-
-        :return: None
         """
         if self.ack == -1:
             # first packet received in a new connection
@@ -164,7 +145,7 @@ class TestServer:
             store=False,
             iface=self.ts_iface,
             lfilter=pkt_filter,
-            prn=lambda p: self.handle_receive_command(p),
+            prn=self.handle_receive_command,
             timeout=timeout)
 
         self.bg_sniffer.start()
@@ -186,7 +167,6 @@ class TestServer:
         send(packet)
         if update_seq:
             self.update_sequence_num(packet)
-        
 
     def make_packet(self,
                     payload: Optional[bytes] = None,
@@ -203,7 +183,8 @@ class TestServer:
 
         :return: The newly created packet.
         """
-        packet_ack = (0 if self.ack == -1 else self.ack) if ack is None else ack
+        packet_ack = self.ack if ack is None else ack
+        packet_ack = max(packet_ack, 0)
         pkt = self.ip / TCP(sport=self.sport,
                             dport=self.dport,
                             seq=(self.seq if seq is None else seq),
@@ -216,52 +197,46 @@ class TestServer:
 
     def handle_send_command(self, packet: TCPPacket):
         """
-        Handles a TestCommand of type SEND.
-        Sends a given payload to the TCP endpoint for which the TestServer stubs a communication partner.
-
-        :param parameters: The parameters for the SEND command.
-
-        :return: A TestCommand of type SEND.
+        Sends a given packet to the TCP endpoint for which the TestServer stubs a communication partner.
         """
         self.logger.info("Sending packet with flags: %s", packet.flags)
 
-        
-        # TODO: Update sequence numbers
+        update_seq=True
+
+        if packet.sport != self.sport or \
+           packet.dport != self.dport:
+            self.reset()
+            self.sport = packet.sport
+            self.dport = packet.dport
+
         if packet.seq == SEQ.SEQ_VALID:
             sequenceno = self.seq
         else:
             sequenceno = randint(3000000, 5999999)
+            update_seq = False
 
-        # TODO: Update acknowledgement numbers
         if packet.ack == ACK.ACK_VALID:
             ackno = self.ack
         else:
             ackno = randint(3000000, 5999999)
+            update_seq = False
 
 
         pkt = self.make_packet(
             payload=packet.payload,
             seq=sequenceno,
             ack=ackno,
-            flags=packet.flags
+            flags=list(map(lambda f: f.name[0], packet.flags))
         )
 
-        self.send(pkt, update_seq=True)
+        self.send(pkt, update_seq=update_seq)
         self.logger.info("Packet was sent")
 
-    def handle_receive_command(self, packet):
+    def handle_receive_command(self, packet: Packet):
         """
-        Handles a TestCommand of type RECEIVE.
         Receives a single packet from the TCP endpoint for which the TestServer stubs a communication partner.
-
-        :param parameters: The parameters for the RECEIVE command.
-
-        :raise UserException: If the timeout from the command parameters is reached before a packet is received.
-
-        :return: A TestCommand of type RECEIVE.
         """
-        
-        
+
         if self.validate_packet_seq(packet):
             seq_status = SEQ.SEQ_VALID
         else:
@@ -272,14 +247,18 @@ class TestServer:
         else:
             ack_status = ACK.ACK_INVALID
 
-        if ack_status == ACK.ACK_VALID and seq_status == SEQ.SEQ_VALID:
+        if ack_status == ACK.ACK_VALID and \
+           seq_status == SEQ.SEQ_VALID and \
+           packet.seq >= self.ack:
             self.update_ack_num(packet)
 
-        return TCPPacket(
+        abs_packet = TCPPacket(
             sport=packet["TCP"].sport,
             dport=packet["TCP"].dport,
             seq=seq_status,
             ack=ack_status,
-            flags=packet["flags"],
-            payload=packet[Raw].load
+            flags=list(map(TCPFlag, packet["flags"])),
+            payload=packet[Raw].load if Raw in packet else b''
         )
+
+        self.mbt_client.send(abs_packet.to_torxakis().encode())

@@ -1,20 +1,39 @@
 #!/usr/bin/env python3
 # pylint: disable=duplicate-code
 
-import asyncio
 import sys
-from typing import cast
+import socket
 
 import configparser
 import logging
-import websockets
 from termcolor import colored
 
 from tcpTester import set_up_logging
 from tcpTester.sut import SUT
-from tcpTester.testCommand import TestCommand
+from tcpTester.types import UserCall
 
 LOG_PREFIX = "./sut"
+
+def runner(ts_ip: str, mbt_port: int):
+    try:
+        mbt_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        mbt_server.bind(("", mbt_port))
+        mbt_server.listen(1)
+
+        (mbt_client, _) = mbt_server.accept()
+        sut = SUT(ts_ip)
+
+        while True:
+            user_call = UserCall.from_torxakis(mbt_client.recv(1000).decode())
+            resp = sut.handle_user_call(user_call)
+            mbt_client.send(resp.to_torxakis().encode())
+
+    except OSError as os_err:
+        logging.getLogger("SUTMain").error("Connection to the TestRunner failed - OSError: %s", os_err.strerror)
+        sys.exit(-1)
+    except Exception as err:
+        logging.getLogger("SUTMain").error("Unexpected error: %s", err)
+        sys.exit(-2)
 
 
 if __name__ == "__main__":
@@ -26,12 +45,14 @@ if __name__ == "__main__":
     config.read(sys.argv[1])
 
     if "logging" not in config:
-        print(colored("Config file does no contain logging settings!", "red"))
+        print(colored("Config file does not contain logging settings!", "red"))
         sys.exit(-1)
-    if "sut" not in config:
-        print(colored("Config file does no contain sut websocket settings!", "red"))
+    if "mbt" not in config:
+        print(colored("Config file does not contain mbt settings!", "red"))
         sys.exit(-1)
-
+    if "test_server" not in config:
+        print(colored("Config file does not contain test server settings!", "red"))
+        sys.exit(-1)
     try:
 
         set_up_logging(LOG_PREFIX,
@@ -42,30 +63,15 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     try:
-        sut_ws_ip = config["sut"]["ip"]
-        sut_ws_port = config["sut"]["port"]
+        mbt_port = int(config["mbt"]["port"])
     except KeyError as exc:
-        print(colored("Config file does no contain test runner ip and port setting!", "red"))
+        print(colored("Config file does no contain mbt port setting!", "red"))
         sys.exit(-1)
 
-    async def mbt_command_execution(websocket):
-        sut: SUT = SUT()
+    try:
+        ts_ip = config["test_server"]["ip"]
+    except KeyError as exc:
+        print(colored("Config file does no contain test server ip setting!", "red"))
+        sys.exit(-1)
 
-        async for message in websocket:
-            pass
-
-    async def runner():
-        # pylint: disable=no-member
-        try:
-            async with websockets.serve(mbt_command_execution, f"{sut_ws_ip}", int(sut_ws_port)):
-                await asyncio.Future()
-        except OSError as os_err:
-            logging.getLogger("SUTMain").error("Connection to the TestRunner failed - OSError: %s", os_err.strerror)
-            sys.exit(-1)
-        except Exception as err:
-            logging.getLogger("SUTMain").error("Unexpected error: %s", err)
-            sys.exit(-2)
-
-    asyncio.run(
-        runner()
-    )
+    runner(ts_ip, mbt_port)
