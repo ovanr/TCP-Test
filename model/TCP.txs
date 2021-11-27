@@ -18,8 +18,8 @@ TYPEDEF TCPUserCallInput ::=
     | CLOSE
 ENDDEF
 TYPEDEF TCPUserCallOutput ::= 
-    LISTENSUCCESS
-    | CONNECTSUCCESS
+    SUCCESS
+    | FAILURE
     | RECEIVEOUTPUT { rpayload :: String }
 ENDDEF
 
