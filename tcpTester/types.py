@@ -73,19 +73,22 @@ class TCPFlag(Enum):
 
     @staticmethod
     def from_torxakis(structure: str):
-        return TCPFlag[structure.rstrip().lstrip()]
+        return TCPFlag[structure.strip()]
 
     def to_torxakis(self):
         return self.name
 
+    def __lt__(self, other):
+        return self.name < other.name
+
 @dataclass
 class UserCallResult(WithShow):
     status: UserCallResultType
-    payload: Optional[bytes]
+    payload: Optional[bytes] = None
 
     def to_torxakis(self):
         status = self.status.to_torxakis()
-        payload = "" if not self.payload else self.payload.decode()
+        payload = '""' if not self.payload else '"' + self.payload.decode() + '"'
 
         if self.status in [UserCallResultType.SUCCESS, UserCallResultType.FAILURE]:
             return status
@@ -150,13 +153,13 @@ class TCPPacket(WithShow):
         if not flags:
             return "NIL"
 
-        x = flags[0]
+        x = flags[0].to_torxakis()
         xs = TCPPacket._to_tcp_flag_list(flags[1:])
         return f"CONS({x}, {xs})"
-    
+
     @staticmethod
     def _from_tcp_flag_list(structure: str) -> List[TCPFlag]:
-        structure = structure.rstrip().lstrip()
+        structure = structure.strip()
 
         if structure == "NIL":
             return []
@@ -165,9 +168,9 @@ class TCPPacket(WithShow):
         if header != "CONS":
             raise ParseException(f"TCPFlagList has format: {structure}")
 
-        tokens = filter(lambda t: t, structure[5:-1].split(','))
-        x = TCPFlag.from_torxakis(next(tokens))
-        xs = TCPPacket._from_tcp_flag_list(next(tokens))
+        structure = structure[5:-1]
+        x = TCPFlag.from_torxakis(structure[0:structure.find(',')])
+        xs = TCPPacket._from_tcp_flag_list(structure[structure.find(',')+1:])
 
         xs.insert(0,x)
         return xs
@@ -183,12 +186,25 @@ class TCPPacket(WithShow):
         dport = int(next(tokens))
         seq = SEQ.from_torxakis(next(tokens))
         ack = ACK.from_torxakis(next(tokens))
-        flags = TCPPacket._from_tcp_flag_list(next(tokens))
-        payload = bytes(next(tokens).replace('"', '').encode())
 
+        rest = ','.join(tokens).strip()
+        if rest.startswith("NIL"):
+            tokens = filter(lambda t: t, rest.split(','))
+            flags = TCPPacket._from_tcp_flag_list(next(tokens))
+            payload = bytes(next(tokens).replace('"', '').strip().encode())
+        else:
+            bracket_index = rest.rindex(')', 0, len(rest) -1)
+            raw_flags = rest[0: bracket_index +1]
+            flags = TCPPacket._from_tcp_flag_list(raw_flags)
+            raw_payload = rest[bracket_index + 2:]
+            payload = bytes(raw_payload.replace('"', '').strip().encode())
+
+        flags.sort()
         return TCPPacket(sport, dport, seq, ack, flags, payload)
 
     def to_torxakis(self):
+        seq = self.seq.to_torxakis()
+        ack = self.ack.to_torxakis()
         flags = TCPPacket._to_tcp_flag_list(self.flags)
-        payload = self.payload.decode()
-        return f"TCPPacket({self.sport}, {self.dport}, {self.seq}, {self.ack}, {flags}, {payload}"
+        payload = '"' + self.payload.decode() + '"'
+        return f"TCPPacket({self.sport}, {self.dport}, {seq}, {ack}, {flags}, {payload})"
