@@ -44,6 +44,7 @@ class TestServer(BaseRunner):
         self.sport = -1
         self.dport = -1
         self.ts_iface = ts_iface
+        self.bg_sniffer = None
 
     @property
     def logger(self):
@@ -210,6 +211,34 @@ class TestServer(BaseRunner):
               lfilter=pkt_filter,
               prn=queue.append,
               timeout=timeout)
+
+        return queue
+
+    def start_bg_sniffer(self, timeout: Optional[int] = None) -> List[Packet]:
+        """
+        Sniffs a given number of packets.
+
+        """
+        queue = []
+        self.logger.info("Starting sniffing..")
+
+        def pkt_filter(pkt: Packet) -> bool:
+            return TCP in pkt and \
+                   pkt.dport == self.sport
+
+        if self.bg_sniffer:
+            self.bg_sniffer.stop(join=True)
+            self.bg_sniffer = None
+
+        self.bg_sniffer = AsyncSniffer(
+            count=0,
+            store=False,
+            iface=self.ts_iface,
+            lfilter=pkt_filter,
+            prn=lambda p: print(p),
+            timeout=timeout)
+
+        self.bg_sniffer.start()
 
         return queue
 
