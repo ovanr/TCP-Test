@@ -51,7 +51,7 @@ ENDDEF
 
 FUNCDEF isListenUserCall ( c :: TCPUserCallInput ) :: Bool ::=
     IF isLISTEN(c) THEN
-        (lport(c) > 3000) /\ (lport(c) < 5000)
+        (lport(c) > 4000) /\ (lport(c) < 5000)
     ELSE
         False
     FI
@@ -59,7 +59,7 @@ ENDDEF
 
 FUNCDEF isConnectUserCall ( c :: TCPUserCallInput ) :: Bool ::=
     IF isCONNECT(c) THEN
-        (cport(c) > 3000) /\ (cport(c) < 5000)
+        (cport(c) > 4000) /\ (cport(c) < 5000)
     ELSE
         False
     FI
@@ -70,7 +70,7 @@ FUNCDEF isSyn ( t :: TCPPacket ) :: Bool ::=
     (payload(t) == "") /\
     (seq(t) == SEQ_VALID) /\
     (ack(t) == ACK_VALID) /\
-    (sport(t) > 3000) /\ 
+    (sport(t) > 4000) /\ 
     (sport(t) < 5000)
 ENDDEF
 

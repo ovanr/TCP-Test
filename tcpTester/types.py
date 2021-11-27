@@ -120,15 +120,15 @@ class UserCall(WithShow):
     @staticmethod
     def from_torxakis(structure: str):
         if structure.startswith("LISTEN"):
-            port = int(structure[8:-1])
+            port = int(structure[7:-1])
             return UserCall(CommandType["LISTEN"], ListenParameters(port))
 
         if structure.startswith("CONNECT"):
-            port = int(structure[9:-1])
+            port = int(structure[8:-1])
             return UserCall(CommandType["CONNECT"], ConnectParameters(port))
 
         if structure.startswith("SEND"):
-            payload = bytes(structure[6:-1].replace('"', '').encode())
+            payload = bytes(structure[5:-1].replace('"', '').encode())
             return UserCall(CommandType["SEND"], SendParameters(payload))
 
         if structure.startswith("RECEIVE"):
