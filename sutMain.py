@@ -27,8 +27,9 @@ def runner(ts_ip: str, mbt_port: int):
             raw = mbt_client.recv(1000).decode()
             logging.getLogger("SUTMain").info("Got input: %s", raw)
             user_call = UserCall.from_torxakis(raw)
-            resp = sut.handle_user_call(user_call)
-            mbt_client.send(resp.to_torxakis().encode())
+            resp = sut.handle_user_call(user_call).to_torxakis()
+            logging.getLogger("SUTMain").info("Sending response: %s", resp)
+            mbt_client.send((resp + "\n").encode())
 
     except OSError as os_err:
         logging.getLogger("SUTMain").error("Connection to the TestRunner failed - OSError: %s", os_err.strerror)

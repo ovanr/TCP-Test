@@ -49,6 +49,10 @@ CHANDEF  Channels  ::=    InSutNet   :: TCPPacket;
                           OutSutUser   :: TCPUserCallOutput
 ENDDEF
 
+FUNCDEF isValidString ( x :: String ) :: Bool ::=
+    strinre (x, REGEX('[A-Za-z]{0,50}')) 
+ENDDEF
+
 FUNCDEF isListenUserCall ( c :: TCPUserCallInput ) :: Bool ::=
     IF isLISTEN(c) THEN
         (lport(c) > 4000) /\ (lport(c) < 5000)
@@ -84,8 +88,10 @@ ENDDEF
 FUNCDEF isAck ( t :: TCPPacket ) :: Bool ::=
     (flags(t) == CONS(ACK, NIL)) /\
     (seq(t) == SEQ_VALID) /\
-    (ack(t) == ACK_VALID)
+    (ack(t) == ACK_VALID) /\
+    (payload(t) == "")
 ENDDEF
+
 
 FUNCDEF synack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
     TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, CONS(SYN, NIL)), "")
@@ -111,7 +117,7 @@ STAUTDEF sutPassiveOpenStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; In
             qclosed ->  InSutUser ? c [[ isListenUserCall(c) ]] { st_src_port := lport(c) } ->  qlisten
             qlisten ->  InSutNet ? s [[ (dport(s) == st_src_port) /\ isSyn(s) ]] { st_dst_port := sport(s) } -> qsynrecv_1
             qsynrecv_1 -> OutSutNet ! synack(st_src_port, st_dst_port) -> qsynrecv_2
-            qsynrecv_2 -> InSutNet ? a [[ isAck(a) ]] -> qestablished
+            qsynrecv_2 -> InSutNet ? a [[ isAck(a) /\ (dport(a) == st_src_port) /\ (sport(a) == st_dst_port) ]] -> qestablished
             qestablished -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qcompleted
 ENDDEF
 -- ----------------------------------------------------------------------------------------- --
@@ -142,16 +148,16 @@ CNECTDEF  Sut
    ::=
         CLIENTSOCK
 
-        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 3000
+        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 2992
         ENCODE     InSutNet ? x                 ->  ! toString(x)
 
-        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 3000
+        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 2992
         DECODE     OutSutNet ! fromString(s)    <-  ? s
 
-        CHAN  OUT  InSutUser                    HOST "192.168.1.147"  PORT 3001
+        CHAN  OUT  InSutUser                    HOST "192.168.1.147"  PORT 3012
         ENCODE     InSutUser ? t                ->  ! toString(t)
 
-        CHAN  IN   OutSutUser                   HOST "192.168.1.147"  PORT 3001
+        CHAN  IN   OutSutUser                   HOST "192.168.1.147"  PORT 3012
         DECODE     OutSutUser ! fromString(m)   <-  ? m
 ENDDEF
 

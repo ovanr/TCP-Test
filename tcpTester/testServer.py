@@ -4,7 +4,7 @@ from random import randint
 from typing import Optional, List
 
 from scapy.all import *
-from scapy.layers.inet import TCP
+from scapy.layers.inet import TCP, IP
 
 from tcpTester.types import ACK, SEQ, TCPPacket, TCPFlag
 
@@ -13,14 +13,14 @@ class TestServer:
     Implementation of the TestServer.
     """
 
-    def __init__(self, ts_iface, mbt_client: socket.socket):
+    def __init__(self, ts_iface: str, sut_ip: str, mbt_client: socket.socket):
         """
         Initializes class variables.
         """
         self.logger.info("test server started")
 
         # Variables used for stubbing a communication partner for a TCP endpoint.
-        self.ip = None
+        self.ip = IP(dst=sut_ip)
         self.seq = -1
         self.ack = -1
         self.sport = -1
@@ -199,7 +199,7 @@ class TestServer:
         """
         Sends a given packet to the TCP endpoint for which the TestServer stubs a communication partner.
         """
-        self.logger.info("Sending packet with flags: %s", packet.flags)
+        self.logger.info("Sending packet: %s", packet)
 
         update_seq=True
 
@@ -208,6 +208,7 @@ class TestServer:
             self.reset()
             self.sport = packet.sport
             self.dport = packet.dport
+            time.sleep(2)
 
         if packet.seq == SEQ.SEQ_VALID:
             sequenceno = self.seq
@@ -237,6 +238,14 @@ class TestServer:
         Receives a single packet from the TCP endpoint for which the TestServer stubs a communication partner.
         """
 
+        self.logger.info("Received a packet")
+
+        if TCP not in packet or \
+           packet.dport != self.sport or \
+           packet.sport != self.dport:
+            self.logger.info("Received packet not intended for us %s", packet.__repr__())
+            return
+
         if self.validate_packet_seq(packet):
             seq_status = SEQ.SEQ_VALID
         else:
@@ -257,8 +266,10 @@ class TestServer:
             dport=packet["TCP"].dport,
             seq=seq_status,
             ack=ack_status,
-            flags=list(map(TCPFlag, packet["flags"])),
+            flags=list(map(TCPFlag, packet.sprintf("%TCP.flags%"))),
             payload=packet[Raw].load if Raw in packet else b''
         )
 
-        self.mbt_client.send(abs_packet.to_torxakis().encode())
+        raw = abs_packet.to_torxakis()
+        self.logger.info("Forwarding packet: %s", raw)
+        self.mbt_client.send((raw + "\n").encode())

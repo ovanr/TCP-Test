@@ -14,14 +14,14 @@ from tcpTester.types import TCPPacket
 
 LOG_PREFIX = "./test_server"
 
-def runner(ts_iface: str, mbt_port: int):
+def runner(ts_iface: str, sut_ip: str, mbt_port: int):
     try:
         mbt_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         mbt_server.bind(("", mbt_port))
         mbt_server.listen(1)
 
         (mbt_client, _) = mbt_server.accept()
-        ts = TestServer(ts_iface=ts_iface, mbt_client=mbt_client)
+        ts = TestServer(ts_iface=ts_iface, sut_ip=sut_ip, mbt_client=mbt_client)
 
         while True:
             raw = mbt_client.recv(3000).decode()
@@ -33,6 +33,7 @@ def runner(ts_iface: str, mbt_port: int):
         logging.getLogger("TestServer").error("Connection to the wbt failed - OSError: %s", os_err.strerror)
         sys.exit(-1)
     except Exception as err:
+        raise err
         logging.getLogger("TestServer").error("Unexpected error: %s", err)
         sys.exit(-2)
 
@@ -52,6 +53,9 @@ if __name__ == "__main__":
         sys.exit(-1)
     if "test_server" not in config:
         print(colored("Config file does no contain test server settings!", "red"))
+        sys.exit(-1)
+    if "sut" not in config:
+        print(colored("Config file does no contain sut settings!", "red"))
         sys.exit(-1)
 
     try:
@@ -74,4 +78,10 @@ if __name__ == "__main__":
         print(colored("Config file does no contain test server iface setting!", "red"))
         sys.exit(-1)
 
-    runner(test_server_iface, mbt_port)
+    try:
+        sut_ip = config["sut"]["ip"]
+    except KeyError as exc:
+        print(colored("Config file does no contain sut ipsetting!", "red"))
+        sys.exit(-1)
+
+    runner(test_server_iface, sut_ip, mbt_port)

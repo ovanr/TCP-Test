@@ -202,10 +202,11 @@ class TCPPacket(WithShow):
             raw_payload = rest[bracket_index + 2:]
             payload = bytes(raw_payload.replace('"', '').strip().encode())
 
-        flags.sort()
         return TCPPacket(sport, dport, seq, ack, flags, payload)
 
     def to_torxakis(self):
+        self.flags.sort()
+
         seq = self.seq.to_torxakis()
         ack = self.ack.to_torxakis()
         flags = TCPPacket._to_tcp_flag_list(self.flags)
