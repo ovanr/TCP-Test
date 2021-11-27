@@ -54,6 +54,14 @@ FUNCDEF isListenUserCall ( c :: TCPUserCallInput ) :: Bool ::=
     FI
 ENDDEF
 
+FUNCDEF isConnectUserCall ( c :: TCPUserCallInput ) :: Bool ::=
+    IF isCONNECT(c) THEN
+        (cport(c) > 3000) /\ (cport(c) < 5000)
+    ELSE
+        False
+    FI
+ENDDEF
+
 FUNCDEF elemFlag ( x :: TCPFlag; xs :: TCPFlagList ) :: Bool ::=
     IF isNIL(xs) THEN 
         False 
@@ -93,6 +101,14 @@ FUNCDEF synack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
     TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, CONS(SYN, NIL)), "")
 ENDDEF
 
+FUNCDEF syn ( sport :: Int; dport :: Int ) :: TCPPacket ::=
+    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(SYN, NIL), "")
+ENDDEF
+
+FUNCDEF ack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
+    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, NIL), "")
+ENDDEF
+
 -- the sut enters passive mode (listens for new connections)
 -- and torXakis attempts to create a connection with it
 STAUTDEF sutPassiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
@@ -109,6 +125,22 @@ STAUTDEF sutPassiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutU
             qsynrecv_1 -> OutSutNet ! synack(st_src_port, st_dst_port) -> qsynrecv_2
             qsynrecv_2 -> InSutNet ? a [[ isAck(a) ]] -> qestablished
             qestablished -> OutSutUser ? r [[ isCONNECTSUCCESS(r) ]] -> qclosed
+ENDDEF
+
+STAUTDEF sutActiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
+	::=
+		STATE
+			qclosed, qsynsent_1, qsynsent_2, qestablished_1, qestablished_2
+        VAR
+			st_src_port :: Int; st_dst_port :: Int
+		INIT
+			qclosed { st_src_port := 0; st_dst_port := 0 }
+		TRANS
+			qclosed -> InSutUser ? c [[ isConnectUserCall(c) ]] { st_src_port := cport(c) } -> qsynsent_1
+			qsynsent_1 -> OutSutNet ! syn(st_src_port, st_dst_port) -> qsynsent_2
+			qsynsent_2 -> InSutNet ? sa [[ (dport(sa) == st_src_port) /\ isSynAck(sa) ]] { st_dst_port:= sport(sa) } -> qestablished_1
+			qestablished_1 -> OutSutNet ! ack(st_src_port, st_dst_port) -> qestablished_2
+			qestablished_2 -> OutSutUser ? r [[ isCONNECTSUCCESS(r) ]] -> qclosed
 ENDDEF
 
 -- model definition for the TCP system
