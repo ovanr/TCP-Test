@@ -1,11 +1,23 @@
 from __future__ import annotations
+from typing import Optional, Union, List
 from dataclasses import dataclass
 from enum import Enum
 from copy import deepcopy
-from typing import List
+
+DEFAULT_TIMEOUT = 20  # in seconds
 
 class ParseException(Exception):
     pass
+
+class UserException(Exception):
+    pass
+
+class CommandType(Enum):
+    LISTEN = 0
+    CONNECT = 1
+    SEND = 2
+    RECEIVE = 3
+    CLOSE = 4
 
 class WithShow:
     def __str__(self):
@@ -89,7 +101,6 @@ class TCPPacket(WithShow):
         xs.insert(0,x)
         return xs
 
-
     @staticmethod
     def from_torxakis(structure: str) -> TCPPacket:
         header = structure[0:9]
@@ -110,3 +121,35 @@ class TCPPacket(WithShow):
         flags = TCPPacket._to_tcp_flag_list(self.flags)
         payload = self.payload.decode()
         return f"TCPPacket({self.sport}, {self.dport}, {self.seq}, {self.ack}, {flags}, {payload}"
+
+class UserCallResultType(Enum):
+    SUCCESS = 0
+    FAILURE = 1
+    RECEIVE = 2
+
+@dataclass
+class UserCallResult(WithShow):
+    status: UserCallResultType
+    payload: Optional[bytes]
+
+@dataclass
+class SendParameters(WithShow):
+    payload: bytes
+
+@dataclass
+class ListenParameters(WithShow):
+    src_port: int
+
+@dataclass
+class ConnectParameters(WithShow):
+    dst_port: int
+
+Parameters = Union[ListenParameters,
+                   ConnectParameters,
+                   SendParameters,
+                   None]
+
+@dataclass
+class UserCall(WithShow):
+    command_type: CommandType
+    command_parameters: Parameters = None
