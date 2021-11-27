@@ -24,7 +24,9 @@ def runner(ts_ip: str, mbt_port: int):
         sut = SUT(ts_ip)
 
         while True:
-            user_call = UserCall.from_torxakis(mbt_client.recv(1000).decode())
+            raw = mbt_client.recv(1000).decode()
+            logging.getLogger("SUTMain").info("Got input: %s", raw)
+            user_call = UserCall.from_torxakis(raw)
             resp = sut.handle_user_call(user_call)
             mbt_client.send(resp.to_torxakis().encode())
 

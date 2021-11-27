@@ -24,7 +24,9 @@ def runner(ts_iface: str, mbt_port: int):
         ts = TestServer(ts_iface=ts_iface, mbt_client=mbt_client)
 
         while True:
-            packet = TCPPacket.from_torxakis(mbt_client.recv(3000).decode())
+            raw = mbt_client.recv(3000).decode()
+            logging.getLogger("TestServer").info("Got input: %s", raw)
+            packet = TCPPacket.from_torxakis(raw)
             ts.handle_send_command(packet)
 
     except OSError as os_err:
