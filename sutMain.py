@@ -42,8 +42,8 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     try:
-        test_runner_ip = config["sut"]["ip"]
-        test_runner_port = config["sut"]["port"]
+        sut_ws_ip = config["sut"]["ip"]
+        sut_ws_port = config["sut"]["port"]
     except KeyError as exc:
         print(colored("Config file does no contain test runner ip and port setting!", "red"))
         sys.exit(-1)
@@ -55,10 +55,9 @@ if __name__ == "__main__":
             pass
 
     async def runner():
-        uri = f"ws://{test_runner_ip}:{test_runner_port}/sut"
         # pylint: disable=no-member
         try:
-            async with websockets.serve(mbt_command_execution, f"{test_runner_ip}", int(test_runner_ip)):
+            async with websockets.serve(mbt_command_execution, f"{sut_ws_ip}", int(sut_ws_port)):
                 await asyncio.Future()
         except OSError as os_err:
             logging.getLogger("SUTMain").error("Connection to the TestRunner failed - OSError: %s", os_err.strerror)
@@ -68,7 +67,5 @@ if __name__ == "__main__":
             sys.exit(-2)
 
     asyncio.run(
-        runner(
-            SUT()
-        )
+        runner()
     )

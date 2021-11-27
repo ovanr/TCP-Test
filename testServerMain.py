@@ -6,12 +6,11 @@ import sys
 from typing import cast
 
 import configparser
-import jsonpickle
+import logging
 import websockets
 from termcolor import colored
 
 from tcpTester import set_up_logging
-from tcpTester.testCommand import TestCommand
 from tcpTester.testServer import TestServer
 
 LOG_PREFIX = "./test_server"
@@ -27,8 +26,8 @@ if __name__ == "__main__":
     if "logging" not in config:
         print(colored("Config file does no contain logging settings!", "red"))
         sys.exit(-1)
-    if "test_runner" not in config:
-        print(colored("Config file does no contain test runner settings!", "red"))
+    if "test_server" not in config:
+        print(colored("Config file does no contain test server settings!", "red"))
         sys.exit(-1)
 
     try:
@@ -41,10 +40,10 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     try:
-        test_runner_ip = config["test_runner"]["ip"]
-        test_runner_port = config["test_runner"]["port"]
+        test_server_ws_ip = config["test_server"]["ip"]
+        test_server_ws_port = config["test_server"]["port"]
     except KeyError as exc:
-        print(colored("Config file does no contain test runner ip and port setting!", "red"))
+        print(colored("Config file does no contain test server ip and port setting!", "red"))
         sys.exit(-1)
 
     try:
@@ -53,29 +52,23 @@ if __name__ == "__main__":
         print(colored("Config file does no contain test server iface setting!", "red"))
         sys.exit(-1)
 
+    async def mbt_command_execution(websocket):
+        test_server = TestServer(ts_iface=test_server_iface)
+        for message in websocket:
+            pass
+
     async def runner(server: TestServer):
-        uri = f"ws://{test_runner_ip}:{str(test_runner_port)}/server"
         # pylint: disable=no-member
         try:
-            async with websockets.connect(uri, ping_timeout=None) as websocket:  # type: ignore
-                while True:
-                    recv_data = jsonpickle.decode(await websocket.recv())
-                    cmd = cast(TestCommand, recv_data)
-                    server.logger.info("Received command: %s!", cmd)
-                    result = server.execute_command(cmd)
-                    await websocket.send(jsonpickle.encode(result))
-        except asyncio.exceptions.TimeoutError:
-            server.logger.error("Connection to the TestRunner failed - asyncio timeout")
+            async with websockets.serve(mbt_command_execution, f"{test_server_ws_ip}", int(test_server_ws_port)):
+                await asyncio.Future()
+        except OSError as os_err:
+            logging.getLogger("SUTMain").error("Connection to the TestRunner failed - OSError: %s", os_err.strerror)
             sys.exit(-1)
-        except OSError as exc:
-            server.logger.error("Connection to the TestRunner failed - %s", exc.strerror)
-            sys.exit(-1)
-        except BaseException as exc:
-            server.logger.error("Unexpected error: %s", exc)
+        except Exception as err:
+            logging.getLogger("SUTMain").error("Unexpected error: %s", err)
             sys.exit(-2)
 
     asyncio.run(
-        runner(
-            TestServer(ts_iface=None)
-        )
+        runner()
     )

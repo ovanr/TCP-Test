@@ -5,26 +5,12 @@ from typing import Optional, List
 
 from scapy.all import *
 
-from tcpTester.baseRunner import BaseRunner
-from tcpTester.testCommand import (
-    TestCommand,
-    CommandType,
-    ConnectParameters,
-    ListenParameters,
-    ReceiveParameters,
-    ResultParameters,
-    DisconnectParameters,
-    SendParameters,
-    SendReceiveParameters,
-    UserException,
-    DEFAULT_TIMEOUT
-)
+from tcpTester.types import ACK, SEQ, TCPPacket
 
 # timeout for the sr1 command (in seconds)
 TIMEOUT = 5
 
-
-class TestServer(BaseRunner):
+class TestServer:
     """
     Implementation of the TestServer.
     """
@@ -109,38 +95,6 @@ class TestServer(BaseRunner):
                 size += 1
         return size
 
-    @staticmethod
-    def get_missing_flags(packet: Packet, exp_flags: Optional[str]) -> List[str]:
-        """
-        Returns the TCP flags from a given list of expected flags that are not present in a given packet.
-
-        :param packet: The packet for which to get the missing flags.
-        :param exp_flags: The list of expected flags.
-
-        :return: The list of TCP flags that are missing from the packet but present in the list of expected flags.
-        """
-        if not exp_flags:
-            return []
-
-        return list(filter(lambda f: not f in packet.sprintf("%TCP.flags%"), exp_flags)) # type: ignore
-
-    @staticmethod
-    def validate_payload(packet: Packet, exp_payload: Optional[bytes] = None) -> None:
-        """
-        Validates that the payload of a given packet is equal to a given expected payload.
-
-        :param packet: The packet of which the payload is validated.
-        :param exp_payload: The expected payload with which the payload of the packet is compared.
-
-        :raise UserException: If the packet's payload doesn't match the expected payload.
-
-        :return: None
-        """
-        payload = packet[Raw].load if Raw in packet else b''
-        if exp_payload and exp_payload != payload:
-            logging.getLogger("PayloadValidator").warning("packet contained incorrect bytes")
-            raise UserException(f"Invalid data received: '{payload}'")
-
     def validate_packet_seq(self, packet: Packet) -> None:
         """
         Validates the sequence number of a given packet.
@@ -187,37 +141,6 @@ class TestServer(BaseRunner):
         if packet.ack < self.seq:
             self.logger.info("Received packet with past ack %s != %s", packet.ack, self.seq)
             raise UserException(f"Received packet with past ack {packet.ack} != {self.seq}")
-
-    def _sniff(self,
-               num_packets: int,
-               exp_flags: Optional[str],
-               timeout: Optional[int] = None) -> List[Packet]:
-        """
-        Sniffs a given number of packets.
-        Returns a list of the packets that were destined for the TestServer and that have all of the flags from a given list of flags.
-
-        :param num_packets: The number of packets to sniff.
-        :param exp_flags: The list of flags which a packet must have to be included in the result list.
-        :param timeout: Optional timeout. Function stops sniffing if this timeout expires before it is done.
-
-        :return: The list of sniffed packets that have all of the expected flags.
-        """
-        queue = []
-        self.logger.info("Starting sniffing..")
-
-        def pkt_filter(pkt: Packet) -> bool:
-            return TCP in pkt and \
-                   pkt.dport == self.sport and \
-                   len(TestServer.get_missing_flags(pkt, exp_flags)) == 0
-
-        sniff(count=num_packets,
-              store=False,
-              iface=self.ts_iface,
-              lfilter=pkt_filter,
-              prn=queue.append,
-              timeout=timeout)
-
-        return queue
 
     def start_bg_sniffer(self, timeout: Optional[int] = None) -> List[Packet]:
         """
@@ -371,84 +294,7 @@ class TestServer(BaseRunner):
 
         return pkt
 
-    def handle_listen_command(self, parameters: ListenParameters) -> TestCommand:
-        """
-        Handles a TestCommand of type LISTEN.
-        Stubs a TCP endpoint that passively listens for an incoming connection request.
-
-        :param parameters: The parameters for the LISTEN command.
-
-        :raise UserException: If a timout occurrs while listening for a packet.
-        :raise UserException: If the incoming packet does not have the syn (S) flag.
-
-        :return: A TestCommand of type LISTEN.
-        """
-        self.logger.info("Listening for Syn packet")
-        self.reset()
-
-        self.sport = parameters.src_port
-        packet = self.recv(update_ack=parameters.update_ts_ack)
-
-        if not packet:
-            raise UserException("Listen timed out")
-
-        self.logger.info("Packet received from %s", packet[IP].src)
-        self.ip = IP(dst=packet[IP].src)
-
-        flags = packet.sprintf("%TCP.flags%")
-        if "S" not in flags:
-            raise UserException(f"Invalid flags received: expected 'S' got {flags}")
-
-        self.dport = packet.sport
-
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["LISTEN"],
-            description=f"Packet received: {packet.__repr__()}"
-        ))
-
-    def handle_connect_command(self, parameters: ConnectParameters) -> TestCommand:
-        """
-        Handles a TestCommand of type CONNECT.
-        Stubs the establishment of a new connection with a TCP endpoint.
-
-        :param parameters: The parameters for the CONNECT command.
-
-        :return: A TestCommand of type CONNECT.
-        """
-        self.logger.info("connecting to %s", parameters.dst_port)
-        self.reset()
-
-        self.ip = IP(dst=parameters.destination)
-        self.sport = parameters.src_port
-        self.dport = parameters.dst_port
-
-        syn = self.make_packet(flags="S")
-
-        if not parameters.full_handshake:
-            self.send(syn)
-            self.logger.info("single syn sent")
-            return self.make_result(ResultParameters(
-                status=0,
-                operation=CommandType["CONNECT"]
-            ))
-
-        self.logger.info("sending first syn")
-        synack = self.sr(syn, exp_flags="SA", timeout=TIMEOUT)
-        self.logger.info("response is syn/ack")
-
-        ack = self.make_packet(flags="A")
-        self.send(ack)
-
-        self.logger.info("sent ack")
-
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["CONNECT"],
-            description=f"Last Packet received: {synack.__repr__()}"
-        ))
-
-    def handle_send_command(self, parameters: SendParameters) -> TestCommand:
+    def handle_send_command(self, packet: TCPPacket):
         """
         Handles a TestCommand of type SEND.
         Sends a given payload to the TCP endpoint for which the TestServer stubs a communication partner.
@@ -457,23 +303,31 @@ class TestServer(BaseRunner):
 
         :return: A TestCommand of type SEND.
         """
-        self.logger.info("Sending packet with flags: %s", parameters.flags)
+        self.logger.info("Sending packet with flags: %s", packet.flags)
+
+        
+        # TODO: Update sequence numbers
+        if packet.seq == SEQ.SEQ_VALID:
+            sequenceno = self.seq
+        else:
+            sequenceno = randint(3000000, 5999999)
+
+        # TODO: Update acknowledgement numbers
+        if packet.ack == ACK.ACK_VALID:
+            ackno = self.ack
+        else:
+            ackno = randint(3000000, 5999999)
+
 
         pkt = self.make_packet(
-            payload=parameters.payload,
-            seq=parameters.sequence_number,
-            ack=parameters.acknowledgement_number,
-            flags=parameters.flags
+            payload=packet.payload,
+            seq=sequenceno,
+            ack=ackno,
+            flags=packet.flags
         )
 
-        self.send(pkt, update_seq=parameters.update_ts_seq)
+        self.send(pkt, update_seq=True)
         self.logger.info("Packet was sent")
-
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["SEND"],
-            description=f"Sent this payload: {parameters.payload}"
-        ))
 
     def handle_receive_command(self, parameters: ReceiveParameters) -> TestCommand:
         """
@@ -504,85 +358,4 @@ class TestServer(BaseRunner):
             status=0,
             operation=CommandType["RECEIVE"],
             description=f"Packet received: {recv_packet.__repr__()}"
-        ))
-
-    def handle_send_receive_command(self, parameters: SendReceiveParameters) -> TestCommand:
-        """
-        Handles a TestCommand of type SENDRECEIVE.
-        Creates a new packet from the TestCommand parameters, sends it to the TCP endpoint for which
-        the TestServer stubs a communication partner and receives the corresponding response packet.
-
-        :param parameters: The parameters for the SENDRECEIVE command.
-
-        :return: A TestCommand of type SENDRECEIVE.
-        """
-        send_params = parameters.send_parameters
-        self.logger.info("Sending packet with flags: %s", send_params.flags)
-
-        pkt = self.make_packet(
-            payload=send_params.payload,
-            seq=send_params.sequence_number,
-            ack=send_params.acknowledgement_number,
-            flags=send_params.flags
-        )
-        self.logger.info("Created packet")
-
-        ret = self.sr(pkt,
-                      exp_flags=parameters.receive_parameters.flags,
-                      timeout=parameters.receive_parameters.timeout,
-                      update_seq=parameters.send_parameters.update_ts_seq,
-                      update_ack=parameters.receive_parameters.update_ts_ack)
-        self.logger.info("SR completed")
-
-        TestServer.validate_payload(ret, parameters.receive_parameters.payload)
-
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["SENDRECEIVE"],
-            description=f"Packet received: {ret.__repr__()}"
-        ))
-
-    def handle_disconnect_command(self, parameters: DisconnectParameters) -> TestCommand:
-        """
-        Handles a TestCommand of type DISCONNECT.
-        Stubs the nominal sequence for closing the connection with the TCP endpoint for which the TestServer stubs a communication partner.
-
-        :param parameters: The parameters for the DISCONNECT command.
-
-        :return: A TestCommand of type DISCONNECT.
-        """
-        self.logger.info("graceful disconnect from client")
-
-        fin = self.make_packet(flags="FA")
-
-        if parameters.half_close:
-            resp = self.sr(fin, exp_flags="A", timeout=TIMEOUT)
-            self.logger.info("fin packet sent")
-        else:
-            resp = self.sr(fin, exp_flags="FA", timeout=TIMEOUT)
-            self.logger.info("fin packet sent")
-            self.logger.info("sending ack")
-            ack = self.make_packet(flags="A")
-            self.send(ack)
-            self.logger.info("ack send")
-
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["DISCONNECT"],
-            description=f"Last Packet received: {resp.__repr__()}"
-        ))
-
-    def handle_abort_command(self) -> TestCommand:
-        """
-        Stubs the abortion of the connection with the TCP endpoint for which the TestServer stubs a communication partner.
-
-        :return: A TestCommand of type ABORT.
-        """
-        self.logger.info("aborting connection")
-        self.reset()
-        self.logger.info("abort done.")
-
-        return self.make_result(ResultParameters(
-            status=1,
-            operation=CommandType["ABORT"],
         ))

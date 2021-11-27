@@ -9,6 +9,7 @@ from tcpTester.testCommand import (
     SendParameters,
     UserException,
 )
+from tcpTester.types import UserCallResult, UserCallResultType
 
 MAX_READ_SIZE = 4096  # in bytes
 TIMEOUT = 20
@@ -89,12 +90,11 @@ class SUT:
             self.socket.connect((parameters.destination, parameters.dst_port))
 
         except Exception as e:
-            # TODO: Send a FAILURE
-            pass
+            return UserCallResult(status=UserCallResultType.FAILURE)
 
         self.logger.info("connection successful")
 
-        # TODO: Send a SUCCESS
+        return UserCallResult(status=UserCallResultType.SUCCESS)
 
     def handle_listen_command(self, parameters: ListenParameters):
         """
@@ -120,10 +120,9 @@ class SUT:
             self.logger.info("received client connect")
 
         except Exception as e:
-            # TODO: Send a FAILURE
-            pass
+            return UserCallResult(status=UserCallResultType.FAILURE)
         
-        # TODO: Send a SUCCESS
+        return UserCallResult(status=UserCallResultType.SUCCESS)
 
     def handle_send_command(self, parameters: SendParameters):
         """
@@ -138,13 +137,12 @@ class SUT:
         """
         self.logger.info("sending packet to client")
         if not self.client_socket:
-            # TODO: Send FAILURE
-            pass
+            return UserCallResult(status=UserCallResultType.FAILURE)
 
         num_bytes = self.client_socket.send(parameters.sPayload)
         self.logger.info("sending completed")
 
-        # TODO: Send SUCCESS
+        return UserCallResult(status=UserCallResultType.SUCCESS)
 
     def handle_receive_command(self):
         """
@@ -167,7 +165,7 @@ class SUT:
         # TODO: If payload is empty or nothing can be received a FAILURE should be thrown.
 
         self.logger.info("receive completed")
-        # TODO: Send RECEIVEOUTPUT {rPayload = payload}
+        return UserCallResult(status=UserCallResultType.RECEIVE, payload=payload)
 
     def handle_close_command(self):
         """
@@ -183,4 +181,4 @@ class SUT:
         self.reset()
         self.logger.info("disconnect completed")
 
-        # TODO: Send a SUCCESS 
+        return UserCallResult(status=UserCallResultType.SUCCESS)
