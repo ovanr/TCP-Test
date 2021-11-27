@@ -29,7 +29,7 @@ class TestServer(BaseRunner):
     Implementation of the TestServer.
     """
 
-    def __init__(self, ts_iface):
+    def __init__(self, ts_iface, mbt_port: int):
         """
         Initializes class variables.
         """
@@ -45,6 +45,11 @@ class TestServer(BaseRunner):
         self.dport = -1
         self.ts_iface = ts_iface
         self.bg_sniffer = None
+
+        self.mbt_server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.mbt_server.bind(("", mbt_port))
+        self.mbt_server.listen(1)
+        (self.mbt_client, _) = self.mbt_server.accept()
 
     @property
     def logger(self):

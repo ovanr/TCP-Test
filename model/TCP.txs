@@ -98,7 +98,7 @@ ENDDEF
 STAUTDEF sutPassiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
    ::=
         STATE
-            qclosed, qlisten, qsynrecv_1, qsynrecv_2, qestablished, qestablished_confirm
+            qclosed, qlisten, qsynrecv_1, qsynrecv_2, qestablished
         VAR
             st_src_port :: Int; st_dst_port :: Int
         INIT
@@ -108,7 +108,7 @@ STAUTDEF sutPassiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutU
             qlisten ->  InSutNet ? s [[ (dport(s) == st_src_port) /\ isSyn(s) ]] { st_dst_port := sport(s) } -> qsynrecv_1
             qsynrecv_1 -> OutSutNet ! synack(st_src_port, st_dst_port) -> qsynrecv_2
             qsynrecv_2 -> InSutNet ? a [[ isAck(a) ]] -> qestablished
-            qestablished -> OutSutUser ? r [[ isCONNECTSUCCESS(r) ]] -> qestablished_confirm
+            qestablished -> OutSutUser ? r [[ isCONNECTSUCCESS(r) ]] -> qclosed
 ENDDEF
 
 -- model definition for the TCP system
@@ -121,7 +121,7 @@ MODELDEF  TCP
         CHAN IN OutSutUser, OutSutNet 
         CHAN OUT InSutNet, InSutUser
 
-        BEHAVIOUR InSutNet ? t >-> OutSutNet ! t
+        BEHAVIOUR sutPassiveStaut [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ()
 ENDDEF
 
 
