@@ -42,11 +42,6 @@ class UserCallResultType(Enum):
     def to_torxakis(self):
         return self.name
 
-@dataclass
-class UserCall(WithShow):
-    command_type: CommandType
-    command_parameters: Parameters = None
-
 
 class SEQ(Enum):
     SEQ_VALID = "SEQ_VALID"
@@ -115,6 +110,33 @@ Parameters = Union[ListenParameters,
                    None]
 
 @dataclass
+class UserCall(WithShow):
+    command_type: CommandType
+    command_parameters: Parameters = None
+
+    @staticmethod
+    def from_torxakis(structure: str):
+        if structure.startswith("LISTEN"):
+            port = int(structure[8:-1])
+            return UserCall(CommandType["LISTEN"], ListenParameters(port))
+
+        if structure.startswith("CONNECT"):
+            port = int(structure[9:-1])
+            return UserCall(CommandType["CONNECT"], ConnectParameters(port))
+
+        if structure.startswith("SEND"):
+            payload = bytes(structure[6:-1].replace('"', '').encode())
+            return UserCall(CommandType["SEND"], SendParameters(payload))
+
+        if structure.startswith("RECEIVE"):
+            return UserCall(CommandType["RECEIVE"])
+
+        if structure.startswith("CLOSE"):
+            return UserCall(CommandType["CLOSE"])
+
+        raise ParseException(f"UserCall has format: {structure}")
+
+@dataclass
 class TCPPacket(WithShow):
     sport: int
     dport: int
@@ -162,7 +184,7 @@ class TCPPacket(WithShow):
         seq = SEQ.from_torxakis(next(tokens))
         ack = ACK.from_torxakis(next(tokens))
         flags = TCPPacket._from_tcp_flag_list(next(tokens))
-        payload = bytes(next(tokens).encode())
+        payload = bytes(next(tokens).replace('"', '').encode())
 
         return TCPPacket(sport, dport, seq, ack, flags, payload)
 
@@ -170,4 +192,3 @@ class TCPPacket(WithShow):
         flags = TCPPacket._to_tcp_flag_list(self.flags)
         payload = self.payload.decode()
         return f"TCPPacket({self.sport}, {self.dport}, {self.seq}, {self.ack}, {flags}, {payload}"
-
