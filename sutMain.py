@@ -6,7 +6,7 @@ import sys
 from typing import cast
 
 import configparser
-import jsonpickle
+import logging
 import websockets
 from termcolor import colored
 
@@ -28,8 +28,8 @@ if __name__ == "__main__":
     if "logging" not in config:
         print(colored("Config file does no contain logging settings!", "red"))
         sys.exit(-1)
-    if "test_runner" not in config:
-        print(colored("Config file does no contain test runner settings!", "red"))
+    if "sut" not in config:
+        print(colored("Config file does no contain sut websocket settings!", "red"))
         sys.exit(-1)
 
     try:
@@ -42,28 +42,29 @@ if __name__ == "__main__":
         sys.exit(-1)
 
     try:
-        test_runner_ip = config["test_runner"]["ip"]
-        test_runner_port = config["test_runner"]["port"]
+        test_runner_ip = config["sut"]["ip"]
+        test_runner_port = config["sut"]["port"]
     except KeyError as exc:
         print(colored("Config file does no contain test runner ip and port setting!", "red"))
         sys.exit(-1)
 
-    async def runner(sut: SUT):
+    async def mbt_command_execution(websocket):
+        sut: SUT = SUT()
+
+        async for message in websocket:
+            pass
+
+    async def runner():
         uri = f"ws://{test_runner_ip}:{test_runner_port}/sut"
         # pylint: disable=no-member
         try:
-            async with websockets.connect(uri, ping_timeout=None) as websocket:  # type: ignore
-                while True:
-                    recv_data = jsonpickle.decode(await websocket.recv())
-                    cmd = cast(TestCommand, recv_data)
-                    sut.logger.info("Received command: %s!", cmd)
-                    result = sut.execute_command(cmd)
-                    await websocket.send(jsonpickle.encode(result))
+            async with websockets.serve(mbt_command_execution, f"{test_runner_ip}", int(test_runner_ip)):
+                await asyncio.Future()
         except OSError as os_err:
-            sut.logger.error("Connection to the TestRunner failed - OSError: %s", os_err.strerror)
+            logging.getLogger("SUTMain").error("Connection to the TestRunner failed - OSError: %s", os_err.strerror)
             sys.exit(-1)
         except Exception as err:
-            sut.logger.error("Unexpected error: %s", err)
+            logging.getLogger("SUTMain").error("Unexpected error: %s", err)
             sys.exit(-2)
 
     asyncio.run(

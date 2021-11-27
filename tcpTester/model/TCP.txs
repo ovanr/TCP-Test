@@ -18,9 +18,8 @@ TYPEDEF TCPUserCallInput ::=
     | CLOSE
 ENDDEF
 TYPEDEF TCPUserCallOutput ::= 
-    LISTENSUCCESS
-    | CONNECTSUCCESS
-	| CLOSESUCCESS
+    SUCCESS
+    | FAILURE
     | RECEIVEOUTPUT { rpayload :: String }
 ENDDEF
 
@@ -135,7 +134,7 @@ STAUTDEF sutPassiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutU
             qlisten ->  InSutNet ? s [[ (dport(s) == st_src_port) /\ isSyn(s) ]] { st_dst_port := sport(s) } -> qsynrecv_1
             qsynrecv_1 -> OutSutNet ! synack(st_src_port, st_dst_port) -> qsynrecv_2
             qsynrecv_2 -> InSutNet ? a [[ isAck(a) ]] -> qestablished
-            qestablished -> OutSutUser ? r [[ isCONNECTSUCCESS(r) ]] -> qclosed
+            qestablished -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qclosed
 ENDDEF
 
 -- the sut enters active mode (Initiates a new connection)
@@ -152,7 +151,7 @@ STAUTDEF sutActiveStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUs
 			qsynsent_1 -> OutSutNet ! syn(st_src_port, st_dst_port) -> qsynsent_2
 			qsynsent_2 -> InSutNet ? sa [[ (dport(sa) == st_src_port) /\ isSynAck(sa) ]] { st_dst_port:= sport(sa) } -> qestablished_1
 			qestablished_1 -> OutSutNet ! ack(st_src_port, st_dst_port) -> qestablished_2
-			qestablished_2 -> OutSutUser ? r [[ isCONNECTSUCCESS(r) ]] -> qclosed
+			qestablished_2 -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qclosed
 ENDDEF
 
 -- the sut enters active mode (Initiates a a close of the connection)
@@ -170,7 +169,7 @@ STAUTDEF sutActiveCloseStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; In
 			qfinwait1_2 -> InSutNet ? a [[ (dport(a) == st_src_port) /\ isAck(a) ]] { st_dst_port := sport(a) } -> qfinwait2
 			qfinwait2 -> InSutNet ? f [[ (dport(f) == st_src_port) /\ isFin(f) ]] { st_dst_port := sport(f) } -> qtimewait_1
 			qtimewait_1 -> OutSutNet ! ack(st_src_port, st_dst_port) -> qtimewait_2
-			qtimewait_2 -> OutSutUser ? r [[ isCLOSESUCCESS(r) ]] -> qtimewait_2
+			qtimewait_2 -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qtimewait_2
 ENDDEF
 
 
@@ -184,7 +183,7 @@ MODELDEF  TCP
         CHAN IN OutSutUser, OutSutNet 
         CHAN OUT InSutNet, InSutUser
 
-        BEHAVIOUR sutPassiveStaut [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ()
+        BEHAVIOUR sutActiveCloseStaut [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ()
 ENDDEF
 
 

@@ -1,15 +1,11 @@
 import logging
 import socket
+import random
 
-from tcpTester.baseRunner import BaseRunner
 from tcpTester.testCommand import (
     CommandType,
     ConnectParameters,
     ListenParameters,
-    ReceiveParameters,
-    ResultParameters,
-    DisconnectParameters,
-    SendReceiveParameters,
     SendParameters,
     UserException,
 )
@@ -18,7 +14,7 @@ MAX_READ_SIZE = 4096  # in bytes
 TIMEOUT = 20
 
 
-class SUT(BaseRunner):
+class SUT:
     """
     Implementation of the System Under Test (SUT)
     """
@@ -83,30 +79,22 @@ class SUT(BaseRunner):
 
         :return: A TestCommand of type RESULT.
         """
-        self.logger.info("Attempting to connect to %s", parameters.dst_port)
-
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.settimeout(TIMEOUT)
-        self.socket.bind(("", parameters.src_port))
-        self.logger.info("bind successful")
+        self.logger.info("Attempting to connect to %s", parameters.cPort)
 
         try:
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.settimeout(TIMEOUT)
+            self.socket.bind(("", random.randint(5000, 50000)))
+            self.logger.info("bind successful")
             self.socket.connect((parameters.destination, parameters.dst_port))
+
         except Exception as e:
-            if parameters.expected_failure:
-                return self.make_result(ResultParameters(
-                    status=0,
-                    operation=CommandType["CONNECT"]
-                ))
-            else:
-                raise e
+            # TODO: Send a FAILURE
+            pass
 
         self.logger.info("connection successful")
 
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["CONNECT"]
-        ))
+        # TODO: Send a SUCCESS
 
     def handle_listen_command(self, parameters: ListenParameters):
         """
@@ -117,23 +105,25 @@ class SUT(BaseRunner):
 
         :return: A TestCommand of type RESULT.
         """
-        self.logger.info("starting socket on %s", parameters.src_port)
+        self.logger.info("starting socket on %s", parameters.lport)
+        try:
 
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.settimeout(TIMEOUT)
-        self.socket.bind(("", parameters.src_port))
-        self.socket.listen(1)
+            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.socket.settimeout(TIMEOUT)
+            self.socket.bind(("", parameters.lport))
+            self.socket.listen(1)
 
-        self.logger.info("bind and listen successful")
+            self.logger.info("bind and listen successful")
 
-        (self.client_socket, _) = self.socket.accept()
+            (self.client_socket, _) = self.socket.accept()
 
-        self.logger.info("received client connect")
+            self.logger.info("received client connect")
 
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["LISTEN"]
-        ))
+        except Exception as e:
+            # TODO: Send a FAILURE
+            pass
+        
+        # TODO: Send a SUCCESS
 
     def handle_send_command(self, parameters: SendParameters):
         """
@@ -148,18 +138,15 @@ class SUT(BaseRunner):
         """
         self.logger.info("sending packet to client")
         if not self.client_socket:
-            raise UserException("Not initialized yet")
+            # TODO: Send FAILURE
+            pass
 
-        num_bytes = self.client_socket.send(parameters.payload or b"")
-        self.logger.warning("sending completed")
+        num_bytes = self.client_socket.send(parameters.sPayload)
+        self.logger.info("sending completed")
 
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["SEND"],
-            description=f"Send {num_bytes} bytes"
-        ))
+        # TODO: Send SUCCESS
 
-    def handle_receive_command(self, parameters: ReceiveParameters):
+    def handle_receive_command(self):
         """
         Handles a TestCommand of type RECEIVE.
         Receives a single packet from the TCP endpoint with which the SUT is connected.
@@ -175,36 +162,14 @@ class SUT(BaseRunner):
         if not self.client_socket:
             raise UserException("Not initialized yet")
 
-        self.client_socket.settimeout(parameters.timeout)
         payload = self.client_socket.recv(MAX_READ_SIZE)
 
-        # cannot check TCP flags
-        # so only check for the data sent
-        if parameters.payload and parameters.payload != payload:
-            self.logger.warning("incorrect bytes received")
-            raise UserException(f"Invalid data received: '{payload}'")
+        # TODO: If payload is empty or nothing can be received a FAILURE should be thrown.
 
         self.logger.info("receive completed")
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["RECEIVE"],
-            description=f"Received this payload: '{payload}'"
-        ))
+        # TODO: Send RECEIVEOUTPUT {rPayload = payload}
 
-    def handle_send_receive_command(self, parameters: SendReceiveParameters):
-        """
-        Handles a TestCommand of type SENDRECEIVE.
-        This command is not implemented for the SUT.
-
-        :param parameters: The parameters for the SEND command.
-
-        :raise UserException: Always.
-
-        :return: None
-        """
-        raise UserException("Unimplemented")
-
-    def handle_disconnect_command(self, parameters: DisconnectParameters):
+    def handle_close_command(self):
         """
         Handles a TestCommand of type DISCONNECT.
         Disconnects the connection between the SUT and the other TCP endpoint.
@@ -214,36 +179,8 @@ class SUT(BaseRunner):
 
         :return: A TestCommand of type RESULT.
         """
-        if parameters.half_close and self.client_socket:
-            self.logger.info("half-closing connection")
-
-            self.client_socket.shutdown(socket.SHUT_WR)
-
-            return self.make_result(ResultParameters(
-                status=0,
-                operation=CommandType["DISCONNECT"]
-            ))
-
-
         self.logger.info("disconnecting from client")
         self.reset()
         self.logger.info("disconnect completed")
 
-        return self.make_result(ResultParameters(
-            status=0,
-            operation=CommandType["DISCONNECT"]
-        ))
-
-    def handle_abort_command(self):
-        """
-        Aborts the current connection with the SUT's communication partner.
-
-        :return: A TestCommand of type ABORT.
-        """
-        self.logger.info("aborting from client")
-        self.reset()
-
-        return self.make_result(ResultParameters(
-            status=1,
-            operation=CommandType["ABORT"]
-        ))
+        # TODO: Send a SUCCESS 
