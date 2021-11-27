@@ -219,12 +219,12 @@ class TestServer(BaseRunner):
         Sniffs a given number of packets.
 
         """
-        queue = []
         self.logger.info("Starting sniffing..")
 
         def pkt_filter(pkt: Packet) -> bool:
             return TCP in pkt and \
-                   pkt.dport == self.sport
+                   pkt.dport == self.sport and \
+                   pkt.sport == self.dport
 
         if self.bg_sniffer:
             self.bg_sniffer.stop(join=True)
@@ -235,12 +235,15 @@ class TestServer(BaseRunner):
             store=False,
             iface=self.ts_iface,
             lfilter=pkt_filter,
-            prn=lambda p: print(p),
+            prn=lambda p: print(p.__repr__()),
             timeout=timeout)
 
         self.bg_sniffer.start()
 
-        return queue
+    def stop_bg_sniffer(self):
+        if self.bg_sniffer:
+            self.bg_sniffer.stop(join=True)
+            self.bg_sniffer = None
 
     def send(self, packet: Packet, update_seq: bool = True) -> None:
         """
