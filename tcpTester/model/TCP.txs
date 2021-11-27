@@ -124,7 +124,7 @@ ENDDEF
 STAUTDEF sutPassiveOpenStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
    ::=
         STATE
-            qclosed, qlisten, qsynrecv_1, qsynrecv_2, qestablished
+            qclosed, qlisten, qsynrecv_1, qsynrecv_2, qestablished,qcompleted
         VAR
             st_src_port :: Int; st_dst_port :: Int
         INIT
@@ -134,7 +134,7 @@ STAUTDEF sutPassiveOpenStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; In
             qlisten ->  InSutNet ? s [[ (dport(s) == st_src_port) /\ isSyn(s) ]] { st_dst_port := sport(s) } -> qsynrecv_1
             qsynrecv_1 -> OutSutNet ! synack(st_src_port, st_dst_port) -> qsynrecv_2
             qsynrecv_2 -> InSutNet ? a [[ isAck(a) ]] -> qestablished
-            qestablished -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qclosed
+            qestablished -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qcompleted
 ENDDEF
 
 -- the sut enters active mode (Initiates a new connection)
