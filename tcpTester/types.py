@@ -37,7 +37,7 @@ class UserCallResultType(Enum):
 
     @staticmethod
     def from_torxakis(structure: str):
-        return UserCallResultType[structure.rstrip().lstrip()]
+        return UserCallResultType[structure.strip()]
 
     def to_torxakis(self):
         return self.name
@@ -49,7 +49,7 @@ class SEQ(Enum):
 
     @staticmethod
     def from_torxakis(structure: str):
-        return SEQ[structure.rstrip().lstrip()]
+        return SEQ[structure.strip()]
 
     def to_torxakis(self):
         return self.name
@@ -60,7 +60,7 @@ class ACK(Enum):
 
     @staticmethod
     def from_torxakis(structure: str):
-        return ACK[structure.rstrip().lstrip()]
+        return ACK[structure.strip()]
 
     def to_torxakis(self):
         return self.name
@@ -119,6 +119,7 @@ class UserCall(WithShow):
 
     @staticmethod
     def from_torxakis(structure: str):
+        structure = structure.strip()
         if structure.startswith("LISTEN"):
             port = int(structure[7:-1])
             return UserCall(CommandType["LISTEN"], ListenParameters(port))
@@ -177,6 +178,8 @@ class TCPPacket(WithShow):
 
     @staticmethod
     def from_torxakis(structure: str) -> TCPPacket:
+        structure = structure.strip()
+
         header = structure[0:9]
         if header != "TCPPacket":
             raise ParseException(f"TCPPacket has format: {structure}")
