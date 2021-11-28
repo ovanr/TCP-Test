@@ -1,235 +1,156 @@
--- type definitions
+{-
+TorXakis - TCP Model Based Testing
+-}
 
---TYPEDEF TCPFlag ::= SYN | ACK | FIN | RST ENDDEF
---TYPEDEF SEQ ::= SEQ_VALID | SEQ_INVALID ENDDEF
---TYPEDEF ACK ::= ACK_VALID | ACK_INVALID ENDDEF
---
----- order is implied
---TYPEDEF TCPFlagList ::=   
---    NIL
---    | CONS  { hd :: TCPFlag ; tl :: TCPFlagList }
---ENDDEF
---
---TYPEDEF TCPUserCallInput ::= 
---    LISTEN { lport :: Int }
---    | CONNECT { cport :: Int }
---    | SEND { spayload :: String }
---    | RECEIVE 
---    | CLOSE
---ENDDEF
---TYPEDEF TCPUserCallOutput ::= 
---    SUCCESS
---    | FAILURE
---    | RECEIVE { rpayload :: String }
---ENDDEF
---
---TYPEDEF TCPPacket ::= TCPPacket { 
---        sport :: Int;
---        dport :: Int;
---        seq :: SEQ;
---        ack :: ACK;
---        flags :: TCPFlagList;
---        payload :: String
---    } 
---ENDDEF
+-- ----------------------------------------------------------------------------------------- --
 
--- channel definitions
-CHANDEF  Channels  ::=    InSutNet   :: String; 
-                          OutSutNet  :: String
---                          InSutUser  :: String; 
---                          OutSutUser :: String
+TYPEDEF TCPFlag ::= SYN | ACK | FIN | RST ENDDEF
+TYPEDEF SEQ ::= SEQ_VALID | SEQ_INVALID ENDDEF
+TYPEDEF ACK ::= ACK_VALID | ACK_INVALID ENDDEF
+
+-- ascending alphabetical order is implied
+TYPEDEF TCPFlagList ::=   
+    NIL
+    | CONS  { hd :: TCPFlag ; tl :: TCPFlagList }
+ENDDEF
+
+TYPEDEF TCPUserCallInput ::= 
+    LISTEN { lport :: Int }
+    | CONNECT { cport :: Int }
+    | SEND { spayload :: String }
+    | RECEIVE 
+    | CLOSE
+ENDDEF
+TYPEDEF TCPUserCallOutput ::= 
+    SUCCESS
+    | FAILURE
+    | RECEIVE { rpayload :: String }
+ENDDEF
+
+TYPEDEF TCPPacket ::= TCPPacket { 
+        sport :: Int;
+        dport :: Int;
+        seq :: SEQ;
+        ack :: ACK;
+        flags :: TCPFlagList;
+        payload :: String
+    } 
+ENDDEF
+
+-- ----------------------------------------------------------------------------------------- --
+
+CHANDEF  Channels  ::=    InSutNet   :: TCPPacket; 
+                          OutSutNet   :: TCPPacket; 
+                          InSutUser   :: TCPUserCallInput; 
+                          OutSutUser   :: TCPUserCallOutput
+ENDDEF
+
+-- ----------------------------------------------------------------------------------------- --
+
+FUNCDEF isValidString ( x :: String ) :: Bool ::=
+    strinre (x, REGEX('[A-Za-z]{0,50}')) 
+ENDDEF
+
+FUNCDEF isListenUserCall ( c :: TCPUserCallInput ) :: Bool ::=
+    IF isLISTEN(c) THEN
+        (lport(c) > 4000) /\ (lport(c) < 5000)
+    ELSE
+        False
+    FI
+ENDDEF
+
+FUNCDEF isConnectUserCall ( c :: TCPUserCallInput ) :: Bool ::=
+    IF isCONNECT(c) THEN
+        (cport(c) > 4000) /\ (cport(c) < 5000)
+    ELSE
+        False
+    FI
+ENDDEF
+
+FUNCDEF isSyn ( t :: TCPPacket ) :: Bool ::=
+    (flags(t) == CONS(SYN, NIL)) /\
+    (payload(t) == "") /\
+    (seq(t) == SEQ_VALID) /\
+    (ack(t) == ACK_VALID) /\
+    (sport(t) > 4000) /\ 
+    (sport(t) < 5000)
+ENDDEF
+
+FUNCDEF isSynAck ( t :: TCPPacket ) :: Bool ::=
+    (flags(t) == CONS(ACK, CONS(SYN, NIL))) /\
+    (payload(t) == "") /\
+    (seq(t) == SEQ_VALID) /\
+    (ack(t) == ACK_VALID)
+ENDDEF
+
+FUNCDEF isAck ( t :: TCPPacket ) :: Bool ::=
+    (flags(t) == CONS(ACK, NIL)) /\
+    (seq(t) == SEQ_VALID) /\
+    (ack(t) == ACK_VALID) /\
+    (payload(t) == "")
 ENDDEF
 
 
--- function definitions
---FUNCDEF isValidString ( x :: String ) :: Bool ::=
---    strinre ( x, REGEX('[A-Za-z]{1,50}')) 
---ENDDEF
---
---FUNCDEF isListenUserCall ( c :: TCPUserCallInput ) :: Bool ::=
---    IF isLISTEN(c) THEN
---        (lport(c) > 3000) /\ (lport(c) < 5000)
---    ELSE
---        False
---    FI
---ENDDEF
---
---FUNCDEF isConnectUserCall ( c :: TCPUserCallInput ) :: Bool ::=
---    IF isCONNECT(c) THEN
---        (cport(c) > 3000) /\ (cport(c) < 5000)
---    ELSE
---        False
---    FI
---ENDDEF
---
---FUNCDEF elemFlag ( x :: TCPFlag; xs :: TCPFlagList ) :: Bool ::=
---    IF isNIL(xs) THEN 
---        False 
---    ELSE 
---        IF x == hd(xs) THEN
---            True
---        ELSE
---            elemFlag(x, tl(xs))
---        FI
---    FI
---ENDDEF
---        
---
---FUNCDEF isSyn ( t :: TCPPacket ) :: Bool ::=
---    (flags(t) == CONS(SYN, NIL)) /\
---    (payload(t) == "") /\
---    (seq(t) == SEQ_VALID) /\
---    (ack(t) == ACK_VALID) /\
---    (sport(t) > 3000) /\ 
---    (sport(t) < 5000)
---ENDDEF
---
---FUNCDEF isSynAck ( t :: TCPPacket ) :: Bool ::=
---    (flags(t) == CONS(ACK, CONS(SYN, NIL))) /\
---    (payload(t) == "") /\
---    (seq(t) == SEQ_VALID) /\
---    (ack(t) == ACK_VALID)
---ENDDEF
---
---FUNCDEF isAck ( t :: TCPPacket ) :: Bool ::=
---    (flags(t) == CONS(ACK, NIL)) /\
---    (seq(t) == SEQ_VALID) /\
---    (ack(t) == ACK_VALID)
---ENDDEF
-----
-----FUNCDEF isFin ( t :: TCPPacket ) :: Bool ::=
-----    (flags(t) == CONS(FIN, NIL)) /\
-----    (seq(t) == SEQ_VALID) /\
-----    (ack(t) == ACK_VALID)
-----ENDDEF
-----
---FUNCDEF synack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
---    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, CONS(SYN, NIL)), "")
---ENDDEF
---
---FUNCDEF syn ( sport :: Int; dport :: Int ) :: TCPPacket ::=
---    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(SYN, NIL), "")
---ENDDEF
---
---FUNCDEF ack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
---    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, NIL), "")
---ENDDEF
-----
-----FUNCDEF fin ( sport :: Int; dport :: Int ) :: TCPPacket ::=
-----    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(FIN, NIL), "")
-----ENDDEF
-----
----- the sut enters passive mode (listens for new connections)
----- and torXakis attempts to create a connection with it
---STAUTDEF sutPassiveOpenStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
---   ::=
---        STATE
---            qclosed, qlisten, qsynrecv_1, qsynrecv_2, qestablished,qcompleted
---        VAR
---            st_src_port :: Int; st_dst_port :: Int
---        INIT
---            qclosed { st_src_port := 0; st_dst_port := 0 }
---        TRANS
---            qclosed ->  InSutUser ? c [[ isListenUserCall(c) ]] { st_src_port := lport(c) } ->  qlisten
---            qlisten ->  InSutNet ? s [[ (dport(s) == st_src_port) /\ isSyn(s) ]] { st_dst_port := sport(s) } -> qsynrecv_1
---            qsynrecv_1 -> OutSutNet ! synack(st_src_port, st_dst_port) -> qsynrecv_2
---            qsynrecv_2 -> InSutNet ? a [[ isAck(a) ]] -> qestablished
---            qestablished -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qcompleted
---ENDDEF
---
----- the sut enters active mode (Initiates a new connection)
---STAUTDEF sutActiveOpenStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
---	::=
---		STATE
---			qclosed, qsynsent_1, qsynsent_2, qestablished_1, qestablished_2
---        VAR
---			st_src_port :: Int; st_dst_port :: Int
---		INIT
---			qclosed { st_src_port := 0; st_dst_port := 0 }
---		TRANS
---			qclosed -> InSutUser ? c [[ isConnectUserCall(c) ]] { st_src_port := cport(c) } -> qsynsent_1
---			qsynsent_1 -> OutSutNet ! syn(st_src_port, st_dst_port) -> qsynsent_2
---			qsynsent_2 -> InSutNet ? sa [[ (dport(sa) == st_src_port) /\ isSynAck(sa) ]] { st_dst_port:= sport(sa) } -> qestablished_1
---			qestablished_1 -> OutSutNet ! ack(st_src_port, st_dst_port) -> qestablished_2
---			qestablished_2 -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qclosed
---ENDDEF
---
----- the sut enters passive mode (Listens for a close of the connection)
---STAUTDEF sutPassiveCloseStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
---	::=
---		STATE
---			qestablished, qclosewait_1, qclosewait_2, qlastack_1, qlastack_2, qclosed
---		VAR
---			st_src_port :: Int; st_dst_port :: Int
---		INIT
---			qestablished { st_src_port := 0; st_dst_port := 0 }
---		TRANS
---			qestablished -> InSutNet ? f [[ (dport(f) == st_src_port) /\ isFin(f) ]] { st_dst_port := sport(f) } -> qclosewait_1
---			qclosewait_1 -> OutSutNet ! ack(st_src_port, st_dst_port) -> qclosewait_2
---			qclosewait_2 -> InSutUser ? c [[ isCLOSE(c) ]] -> qlastack_1
---			qlastack_1 -> OutSutNet ! fin(st_src_port, st_dst_port) -> qlastack_2
---			qlastack_2 -> InSutNet ? a [[ (dport(a) == st_src_port) /\ isAck(a) ]] { st_dst_port := sport(a) } -> qclosed
---			qclosed -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qclosed
---ENDDEF
---
----- the sut enters active mode (Initiates a close of the connection)
---STAUTDEF sutActiveCloseStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
---	::=
---		STATE
---			qestablished, qfinwait1_1, qfinwait1_2, qfinwait2, qtimewait_1, qtimewait_2, qclosed
---		VAR
---			st_src_port :: Int; st_dst_port :: Int
---		INIT
---			qestablished { st_src_port := 0; st_dst_port := 0 }
---		TRANS
---			qestablished -> InSutUser ? c [[ isCLOSE(c) ]] -> qfinwait1_1
---			qfinwait1_1 -> OutSutNet ! fin(st_src_port, st_dst_port) -> qfinwait1_2
---			qfinwait1_2 -> InSutNet ? a [[ (dport(a) == st_src_port) /\ isAck(a) ]] { st_dst_port := sport(a) } -> qfinwait2
---			qfinwait2 -> InSutNet ? f [[ (dport(f) == st_src_port) /\ isFin(f) ]] { st_dst_port := sport(f) } -> qtimewait_1
---			qtimewait_1 -> OutSutNet ! ack(st_src_port, st_dst_port) -> qtimewait_2
---			qtimewait_2 -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qtimewait_2
---ENDDEF
+FUNCDEF synack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
+    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, CONS(SYN, NIL)), "")
+ENDDEF
 
+FUNCDEF syn ( sport :: Int; dport :: Int ) :: TCPPacket ::=
+    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(SYN, NIL), "")
+ENDDEF
 
--- model definition for the TCP system
---   declaring channel InSutNet as input channel  (SUT system point of view)
---   declaring channel OutSutNet as output channel (SUT system point of view)
---   ...
+FUNCDEF ack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
+    TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, NIL), "")
+ENDDEF
 
-MODELDEF Tcp
+-- ----------------------------------------------------------------------------------------- --
+
+STAUTDEF sutPassiveOpenStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
    ::=
-        CHAN IN OutSutNet
-        CHAN OUT InSutNet
-        BEHAVIOUR InSutNet ? s >-> OutSutNet ! s
-        --BEHAVIOUR sutPassiveOpenStaut [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( ) */
+        STATE
+            qclosed, qlisten, qsynrecv_1, qsynrecv_2, qestablished,qcompleted
+        VAR
+            st_src_port :: Int; st_dst_port :: Int
+        INIT
+            qclosed { st_src_port := 0; st_dst_port := 0 }
+        TRANS
+            qclosed ->  InSutUser ? c [[ isListenUserCall(c) ]] { st_src_port := lport(c) } ->  qlisten
+            qlisten ->  InSutNet ? s [[ (dport(s) == st_src_port) /\ isSyn(s) ]] { st_dst_port := sport(s) } -> qsynrecv_1
+            qsynrecv_1 -> OutSutNet ! synack(st_src_port, st_dst_port) -> qsynrecv_2
+            qsynrecv_2 -> InSutNet ? a [[ isAck(a) /\ (dport(a) == st_src_port) /\ (sport(a) == st_dst_port) ]] -> qestablished
+            qestablished -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qclosed
+ENDDEF
+
+-- ----------------------------------------------------------------------------------------- --
+
+MODELDEF  Tcp
+   ::=
+        CHAN IN    InSutNet, InSutUser
+        CHAN OUT   OutSutNet, OutSutUser
+
+        BEHAVIOUR sutPassiveOpenStaut [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( )
 ENDDEF
 
 
--- connectdef definition of the tester connection to the sut
---   the tester is acting as client on a socket
---   channel InSutNet is declared as output (tester point of view), mapped to socket (localhost,3000),
---     a message of type TCPPacket on channel InSutNet is encoded as string with standard function toString
---   channel OutSutNet is declared as input (tester point of view), mapped to socket (localhost,3000),
---     a received string on socket (localhost,3000), which must represent an TCPPacket,
---     is decoded with standard function fromString and forwarded to channel OutSutNet
---   channel InSutUser is declared as output (tester point of view), mapped to socket ("192.168.1.147",3001),
---     a message of type TCPUserCall on channel InSutUser is encoded as string with standard function toString
---   channel OutSutUser is declared as input (tester point of view), mapped to socket ("192.168.1.147", 3001),
---     a received string on socket ("192.168.1.147",3001), which must represent an TCPUserCall,
---     is decoded with standard function fromString and forwarded to channel OutSutUser
+-- ----------------------------------------------------------------------------------------- --
 
-CNECTDEF Sut ::=
+CNECTDEF  Sut
+   ::=
         CLIENTSOCK
 
-        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 1523
+        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 2992
         ENCODE     InSutNet ? x                 ->  ! toString(x)
 
-        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 8592
-        DECODE     OutSutNet ! toString(s)                <-  ? s
---
---        CHAN  OUT  InSutUser                    HOST "localhost"  PORT 3003
---        ENCODE     InSutUser ? t                ->  ! toString(t)
---
---        CHAN  IN   OutSutUser                   HOST "localhost"  PORT 3003
---        DECODE     OutSutUser ! m               <-  ? m
+        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 2992
+        DECODE     OutSutNet ! fromString(s)    <-  ? s
+
+        CHAN  OUT  InSutUser                    HOST "192.168.1.147"  PORT 3012
+        ENCODE     InSutUser ? t                ->  ! toString(t)
+
+        CHAN  IN   OutSutUser                   HOST "192.168.1.147"  PORT 3012
+        DECODE     OutSutUser ! fromString(m)   <-  ? m
 ENDDEF
+
+-- ----------------------------------------------------------------------------------------- --
+-- ----------------------------------------------------------------------------------------- --
+

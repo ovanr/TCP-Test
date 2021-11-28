@@ -88,6 +88,10 @@ class SUT:
         """
         Passively listens for an incoming connection request from another TCP endpoint.
         """
+
+        # clear any previous sockets
+        self.reset()
+
         self.logger.info("starting socket on %s", parameters.src_port)
         try:
 
