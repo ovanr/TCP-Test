@@ -290,3 +290,4 @@ class TestServer:
         raw = abs_packet.to_torxakis()
         self.logger.info("Forwarding packet: %s", raw)
         self.mbt_client.write(raw + "\n")
+        self.mbt_client.flush()
