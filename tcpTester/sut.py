@@ -71,11 +71,11 @@ class SUT:
         self.logger.info("Attempting to connect to %s", parameters.dst_port)
 
         try:
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.settimeout(TIMEOUT)
-            self.socket.bind(("", parameters.src_port))
+            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client_socket.settimeout(TIMEOUT)
+            self.client_socket.bind(("", parameters.src_port))
             self.logger.info("bind successful")
-            self.socket.connect((self.ts_ip, parameters.dst_port))
+            self.client_socket.connect((self.ts_ip, parameters.dst_port))
 
         except Exception:
             return UserCallResult(status=UserCallResultType.FAILURE)

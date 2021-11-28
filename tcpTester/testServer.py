@@ -133,8 +133,9 @@ class TestServer:
         self.logger.info("Starting sniffing..")
 
         def pkt_filter(pkt: Packet) -> bool:
-            return TCP in pkt and \
-                   pkt[IP].src == self.ip.dst
+            return TCP in pkt
+                # and \
+                #    pkt[IP].src == self.ip.dst
 
         if self.bg_sniffer:
             self.bg_sniffer.stop(join=True)
@@ -196,6 +197,10 @@ class TestServer:
         return pkt
 
     def handle_send_command(self, packet: TCPPacket):
+        with self.lock:
+            return self._handle_send_command(packet)
+
+    def _handle_send_command(self, packet: TCPPacket):
         """
         Sends a given packet to the TCP endpoint for which the TestServer stubs a communication partner.
         """
@@ -230,12 +235,15 @@ class TestServer:
             flags=list(map(lambda f: f.name[0], packet.flags))
         )
 
-        with self.lock:
-            self.send(pkt, update_seq=update_seq)
+        self.send(pkt, update_seq=update_seq)
 
         self.logger.info("Packet was sent")
 
     def handle_receive_command(self, packet: Packet):
+        with self.lock:
+            return self._handle_receive_command(packet)
+
+    def _handle_receive_command(self, packet: Packet):
         """
         Receives a single packet from the TCP endpoint for which the TestServer stubs a communication partner.
         """
@@ -244,6 +252,8 @@ class TestServer:
 
         if self.sport == -1 and self.dport == -1 and \
            "S" in packet.sprintf("%TCP.flags%"):
+            self.logger.info("Received syn packet %s", packet.__repr__())
+            self.reset()
             self.sport = packet.dport
             self.dport = packet.sport
 
@@ -252,16 +262,15 @@ class TestServer:
             self.logger.info("Received packet not intended for us %s", packet.__repr__())
             return
 
-        with self.lock:
-            if self.validate_packet_seq(packet):
-                seq_status = SEQ.SEQ_VALID
-            else:
-                seq_status = SEQ.SEQ_INVALID
+        if self.validate_packet_seq(packet):
+            seq_status = SEQ.SEQ_VALID
+        else:
+            seq_status = SEQ.SEQ_INVALID
 
-            if self.validate_packet_ack(packet):
-                ack_status = ACK.ACK_VALID
-            else:
-                ack_status = ACK.ACK_INVALID
+        if self.validate_packet_ack(packet):
+            ack_status = ACK.ACK_VALID
+        else:
+            ack_status = ACK.ACK_INVALID
 
         if ack_status == ACK.ACK_VALID and \
            seq_status == SEQ.SEQ_VALID and \
@@ -273,7 +282,7 @@ class TestServer:
             dport=packet["TCP"].dport,
             seq=seq_status,
             ack=ack_status,
-            flags=list(map(TCPFlag, packet.sprintf("%TCP.flags%"))),
+            flags=list(map(TCPFlag, filter(lambda t: t in ["S", "F", "A", "R" ], packet.sprintf("%TCP.flags%")))),
             payload=packet[Raw].load if Raw in packet else b''
         )
 
