@@ -25,9 +25,10 @@ def runner(ts_iface: str, sut_ip: str, mbt_port: int):
 
         while True:
             raw = mbt_client.recv(3000).decode()
-            logging.getLogger("TestServer").info("Got input: %s", raw)
             if not raw.strip():
                 continue
+
+            logging.getLogger("TestServer").info("Got input: %s", raw)
 
             packet = TCPPacket.from_torxakis(raw)
             ts.handle_send_command(packet)
