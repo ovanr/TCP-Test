@@ -27,8 +27,11 @@ def runner(ts_iface: str, sut_ip: str, mbt_port: int):
 
         while True:
             raw = mbt_file_client.readline()
-            if not raw.strip():
+            if not raw:
                 break
+
+            if not raw.strip():
+                continue
 
             logging.getLogger("TestServer").info("Got input: %s", raw)
 
