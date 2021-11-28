@@ -16,7 +16,7 @@ ENDDEF
 
 TYPEDEF TCPUserCallInput ::= 
     LISTEN { lport :: Int }
-    | CONNECT { csport :: Int; cdport :: Int }
+    | CONNECT { cport :: Int }
     | SEND { spayload :: String }
     | RECEIVE 
     | CLOSE
@@ -61,10 +61,8 @@ ENDDEF
 
 FUNCDEF isConnectUserCall ( c :: TCPUserCallInput ) :: Bool ::=
     IF isCONNECT(c) THEN
-        (cdport(c) > 10000) /\ 
-        (cdport(c) < 12000) /\
-        (csport(c) > 10000) /\ 
-        (csport(c) < 12000)
+        (cport(c) > 10000) /\ 
+        (cport(c) < 12000) /\
     ELSE
         False
     FI
@@ -144,22 +142,22 @@ PROCDEF sutActiveOpen
 	::=
 	    InSutUser ? c [[ isConnectUserCall(c) ]]
     >-> 
-	    OutSutNet ! syn(csport(c), cdport(c)) 
+        OutSutNet ? s [[ (dport(s) == cport(c)) /\ isSyn(s) ]] 
     >->
-	    InSutNet ? sa [[ (sport(sa) == cdport(c)) /\ (dport(sa) == csport(c)) /\ isSynAck(sa) ]] 
+	    InSutNet ? sa [[ (sport(sa) == dport(s)) /\ (dport(sa) == sport(s)) /\ isSynAck(sa) ]] 
     >->
         (   
             (
                 (
-                        OutSutNet ! ack(csport(c), cdport(c)) 
+                        OutSutNet ! ack(sport(s), dport(s)) 
                     >-> 
-                        EXIT ! csport(c) ! cdport(c)
+                        EXIT ! sport(s) ! dport(s)
                 )
             ||| 
                 (
                         OutSutUser ! SUCCESS
                     >-> 
-                        EXIT ! csport(c) ! cdport(c)
+                        EXIT ! sport(s) ! dport(s)
                 )
             )
         )
