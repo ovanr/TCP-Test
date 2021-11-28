@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from random import randint
-from typing import Optional, List
+from typing import Optional, List, TextIO
 
 from scapy.all import *
 from scapy.layers.inet import TCP, IP
@@ -13,7 +13,7 @@ class TestServer:
     Implementation of the TestServer.
     """
 
-    def __init__(self, ts_iface: str, sut_ip: str, mbt_client: socket.socket):
+    def __init__(self, ts_iface: str, sut_ip: str, mbt_client: TextIO):
         """
         Initializes class variables.
         """
@@ -289,4 +289,4 @@ class TestServer:
 
         raw = abs_packet.to_torxakis()
         self.logger.info("Forwarding packet: %s", raw)
-        self.mbt_client.send((raw + "\n").encode())
+        self.mbt_client.write(raw + "\n")

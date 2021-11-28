@@ -21,10 +21,12 @@ def runner(ts_iface: str, sut_ip: str, mbt_port: int):
         mbt_server.listen(1)
 
         (mbt_client, _) = mbt_server.accept()
-        ts = TestServer(ts_iface=ts_iface, sut_ip=sut_ip, mbt_client=mbt_client)
+        mbt_file_client = mbt_client.makefile('wr')
+
+        ts = TestServer(ts_iface=ts_iface, sut_ip=sut_ip, mbt_client=mbt_file_client)
 
         while True:
-            raw = mbt_client.recv(3000).decode()
+            raw = mbt_file_client.readline()
             if not raw.strip():
                 continue
 

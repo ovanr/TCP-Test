@@ -21,10 +21,11 @@ def runner(ts_ip: str, mbt_port: int):
         mbt_server.listen(1)
 
         (mbt_client, _) = mbt_server.accept()
+        mbt_file_client = mbt_client.makefile('wr')
         sut = SUT(ts_ip)
 
         while True:
-            raw = mbt_client.recv(1000).decode()
+            raw = mbt_file_client.readline()
             logging.getLogger("SUTMain").info("Got input: %s", raw)
             if not raw.strip():
                 continue
@@ -32,7 +33,7 @@ def runner(ts_ip: str, mbt_port: int):
             user_call = UserCall.from_torxakis(raw)
             resp = sut.handle_user_call(user_call).to_torxakis()
             logging.getLogger("SUTMain").info("Sending response: %s", resp)
-            mbt_client.send((resp + "\n").encode())
+            mbt_file_client.write(resp + "\n")
 
     except OSError as os_err:
         logging.getLogger("SUTMain").error("Connection to the TestRunner failed - OSError: %s", os_err.strerror)
