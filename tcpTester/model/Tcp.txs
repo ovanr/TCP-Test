@@ -250,9 +250,9 @@ PROCDEF sutEstablished
         )
         >>>
         (
-                sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
-            ##
                 EXIT
+            ##
+                sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
         )
 ENDDEF
 
@@ -306,16 +306,16 @@ CNECTDEF  Sut
    ::=
         CLIENTSOCK
 
-        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 2985
+        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 2983
         ENCODE     InSutNet ? x                 ->  ! toString(x)
 
-        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 2985
+        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 2983
         DECODE     OutSutNet ! fromString(s)    <-  ? s
 
-        CHAN  OUT  InSutUser                    HOST "192.168.1.146"  PORT 3022
+        CHAN  OUT  InSutUser                    HOST "192.168.1.146"  PORT 3023
         ENCODE     InSutUser ? t                ->  ! toString(t)
 
-        CHAN  IN   OutSutUser                   HOST "192.168.1.146"  PORT 3022
+        CHAN  IN   OutSutUser                   HOST "192.168.1.146"  PORT 3023
         DECODE     OutSutUser ! fromString(m)   <-  ? m
 ENDDEF
 
