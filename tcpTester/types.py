@@ -105,6 +105,7 @@ class ListenParameters(WithShow):
 
 @dataclass
 class ConnectParameters(WithShow):
+    src_port: int
     dst_port: int
 
 Parameters = Union[ListenParameters,
@@ -125,8 +126,10 @@ class UserCall(WithShow):
             return UserCall(CommandType["LISTEN"], ListenParameters(port))
 
         if structure.startswith("CONNECT"):
-            port = int(structure[8:-1])
-            return UserCall(CommandType["CONNECT"], ConnectParameters(port))
+            tokens = filter(lambda t: t, structure[8:-1].split(','))
+            src_port = int(next(tokens).strip())
+            dst_port = int(next(tokens).strip())
+            return UserCall(CommandType["CONNECT"], ConnectParameters(src_port, dst_port))
 
         if structure.startswith("SEND"):
             payload = bytes(structure[5:-1].replace('"', '').encode())

@@ -27,6 +27,7 @@ class TestServer:
         self.dport = -1
         self.ts_iface = ts_iface
         self.bg_sniffer = None
+        self.lock = Lock()
 
         self.mbt_client = mbt_client
         self.start_bg_sniffer()
@@ -133,8 +134,7 @@ class TestServer:
 
         def pkt_filter(pkt: Packet) -> bool:
             return TCP in pkt and \
-                   pkt.dport == self.sport and \
-                   pkt.sport == self.dport
+                   pkt[IP].src == self.ip.dst
 
         if self.bg_sniffer:
             self.bg_sniffer.stop(join=True)
@@ -230,7 +230,9 @@ class TestServer:
             flags=list(map(lambda f: f.name[0], packet.flags))
         )
 
-        self.send(pkt, update_seq=update_seq)
+        with self.lock:
+            self.send(pkt, update_seq=update_seq)
+
         self.logger.info("Packet was sent")
 
     def handle_receive_command(self, packet: Packet):
@@ -240,21 +242,26 @@ class TestServer:
 
         self.logger.info("Received a packet")
 
-        if TCP not in packet or \
-           packet.dport != self.sport or \
+        if self.sport == -1 and self.dport == -1 and \
+           "S" in packet.sprintf("%TCP.flags%"):
+            self.sport = packet.dport
+            self.dport = packet.sport
+
+        if packet.dport != self.sport or \
            packet.sport != self.dport:
             self.logger.info("Received packet not intended for us %s", packet.__repr__())
             return
 
-        if self.validate_packet_seq(packet):
-            seq_status = SEQ.SEQ_VALID
-        else:
-            seq_status = SEQ.SEQ_INVALID
+        with self.lock:
+            if self.validate_packet_seq(packet):
+                seq_status = SEQ.SEQ_VALID
+            else:
+                seq_status = SEQ.SEQ_INVALID
 
-        if self.validate_packet_ack(packet):
-            ack_status = ACK.ACK_VALID
-        else:
-            ack_status = ACK.ACK_INVALID
+            if self.validate_packet_ack(packet):
+                ack_status = ACK.ACK_VALID
+            else:
+                ack_status = ACK.ACK_INVALID
 
         if ack_status == ACK.ACK_VALID and \
            seq_status == SEQ.SEQ_VALID and \

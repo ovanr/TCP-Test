@@ -16,7 +16,7 @@ ENDDEF
 
 TYPEDEF TCPUserCallInput ::= 
     LISTEN { lport :: Int }
-    | CONNECT { csport :: Int; cdport :: Int }
+    | CONNECT { cport :: Int }
     | SEND { spayload :: String }
     | RECEIVE 
     | CLOSE
@@ -61,8 +61,7 @@ ENDDEF
 
 FUNCDEF isConnectUserCall ( c :: TCPUserCallInput ) :: Bool ::=
     IF isCONNECT(c) THEN
-        (csport(c) > 4002) /\ (csport(c) < 5000) /\
-        (cdport(c) > 4002) /\ (cdport(c) < 5000)
+        (cport(c) > 4002) /\ (cport(c) < 5000)
     ELSE
         False
     FI
@@ -114,55 +113,41 @@ FUNCDEF finack ( sport :: Int; dport :: Int ) :: TCPPacket ::=
     TCPPacket(sport, dport, SEQ_VALID, ACK_VALID, CONS(ACK, CONS(FIN, NIL)), "")
 ENDDEF
 
+PROCDEF parallelClose [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        (st_src_port, st_dst_port :: Int) ::=
+
+	(OutSutNet ! finack(st_src_port, st_dst_port) >->
+	    InSutNet ? a [[ (dport(a) == st_src_port) /\ (sport(a) == st_dst_port) /\ isAck(a) ]])
+    |||
+	(OutSutUser ? r [[ isSUCCESS(r) ]])
+
+ENDDEF
+
 -- ----------------------------------------------------------------------------------------- --
 
-PROCDEF sutPassiveOpen [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
-    EXIT Int # Int
+STAUTDEF sutPassiveOpenStaut [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
    ::=
-        InSutUser ? c [[ isListenUserCall(c) ]] >->
-        InSutNet ? s [[ (dport(s) == lport(c)) /\ isSyn(s) ]] >->
-        OutSutNet ! synack(dport(s), sport(s)) >->
-        InSutNet ? a [[ isAck(a) /\ (sport(a) == sport(s)) /\ (dport(a) == dport(s)) ]] >->
-        OutSutUser ? r [[ isSUCCESS(r) ]] >->
-        (EXIT ! dport(s) ! sport(s))
-ENDDEF
+        STATE
+            qclosed, qlisten, qsynrecv_1, qsynrecv_2, qestablished_1, qestablished_2,
+			qestablished, qclosewait_1, qclosewait_2, qclosewait_3, qlastack_1, qlastack_2
+        VAR
+            st_src_port :: Int; st_dst_port :: Int
+        INIT
+            qclosed { st_src_port := 0; st_dst_port := 0 }
+        TRANS
+            qclosed ->  InSutUser ? c [[ isListenUserCall(c) ]] { st_src_port := lport(c) } ->  qlisten
+            qlisten ->  InSutNet ? s [[ (dport(s) == st_src_port) /\ isSyn(s) ]] { st_dst_port := sport(s) } -> qsynrecv_1
+            qsynrecv_1 -> OutSutNet ! synack(st_src_port, st_dst_port) -> qsynrecv_2
+            qsynrecv_2 -> InSutNet ? a [[ isAck(a) /\ (dport(a) == st_src_port) /\ (sport(a) == st_dst_port) ]] -> qestablished_1
+            qestablished_1 -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qestablished_2
 
--- the sut enters active mode (Initiates a new connection)
-PROCDEF sutActiveOpen [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
-    EXIT Int # Int
-	::=
-	InSutUser ? c [[ isConnectUserCall(c) ]] >-> 
-	OutSutNet ! syn(csport(c), cdport(c)) >->
-	InSutNet ? sa [[ (sport(sa) == cdport(c)) /\ (dport(sa) == csport(c)) /\ isSynAck(sa) ]] >->
-	OutSutNet ! ack(csport(c), cdport(c)) >->
-	OutSutUser ? r [[ isSUCCESS(r) ]] >-> 
-    (EXIT ! csport(c) ! cdport(c))
-ENDDEF
-
-PROCDEF sutPassiveClose [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
-    (src_port, dst_port :: Int) ::=
-
-    InSutNet ? f [[ (sport(f) == dst_port) /\ (dport(f) == src_port) /\ isFinAck(f) ]] >-> 
-    OutSutNet ! ack(src_port, dst_port) >-> 
-    InSutUser ? c [[ isCLOSE(c) ]] >->
-    (
-	    (OutSutNet ! finack(src_port, dst_port) >->
-	        InSutNet ? a [[ (sport(a) == dst_port) /\ (dport(a) == src_port) /\ isAck(a) ]])
-        |||
-	    (OutSutUser ? r [[ isSUCCESS(r) ]])
-    )
-ENDDEF
-
-PROCDEF tcpBehaviour [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] ( )
-   ::=
-    (   sutPassiveOpen [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( ) 
-        ##
-        sutActiveOpen [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( ) 
-    )
-    >>> ACCEPT ? src_port ? dst_port 
-        IN
-            sutPassiveClose [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
-        NI
+			qestablished_2 -> InSutNet ? f [[ (dport(f) == st_src_port) /\ (sport(f) == st_dst_port) /\ isFinAck(f) ]] -> qclosewait_1
+			qclosewait_1 -> OutSutNet ! ack(st_src_port, st_dst_port) -> qclosewait_2
+			qclosewait_2 -> InSutUser ? c [[ isCLOSE(c) ]] -> qclosewait_3
+            qclosewait_3 -> parallelClose [ InSutNet, OutSutNet, InSutUser, OutSutUser ] (st_src_port, st_dst_port) -> qclosed
+			--qclosewait_3 -> OutSutNet ! finack(st_src_port, st_dst_port) -> qlastack_1
+			--qlastack_1 -> InSutNet ? a [[ (dport(a) == st_src_port) /\ (sport(a) == st_dst_port) /\ isAck(a) ]] -> qclosewait_2
+			--qlastack_2 -> OutSutUser ? r [[ isSUCCESS(r) ]] -> qclosed
 ENDDEF
 
 -- ----------------------------------------------------------------------------------------- --
@@ -172,7 +157,7 @@ MODELDEF  Tcp
         CHAN IN    InSutNet, InSutUser
         CHAN OUT   OutSutNet, OutSutUser
 
-        BEHAVIOUR tcpBehaviour [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( )
+        BEHAVIOUR sutPassiveOpenStaut [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( )
 ENDDEF
 
 
@@ -182,16 +167,16 @@ CNECTDEF  Sut
    ::=
         CLIENTSOCK
 
-        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 2989
+        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 2990
         ENCODE     InSutNet ? x                 ->  ! toString(x)
 
-        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 2989
+        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 2990
         DECODE     OutSutNet ! fromString(s)    <-  ? s
 
-        CHAN  OUT  InSutUser                    HOST "192.168.1.147"  PORT 3015
+        CHAN  OUT  InSutUser                    HOST "192.168.1.147"  PORT 3014
         ENCODE     InSutUser ? t                ->  ! toString(t)
 
-        CHAN  IN   OutSutUser                   HOST "192.168.1.147"  PORT 3015
+        CHAN  IN   OutSutUser                   HOST "192.168.1.147"  PORT 3014
         DECODE     OutSutUser ! fromString(m)   <-  ? m
 ENDDEF
 

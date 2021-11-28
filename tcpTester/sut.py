@@ -73,7 +73,7 @@ class SUT:
         try:
             self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.socket.settimeout(TIMEOUT)
-            self.socket.bind(("", random.randint(5000, 50000)))
+            self.socket.bind(("", parameters.src_port))
             self.logger.info("bind successful")
             self.socket.connect((self.ts_ip, parameters.dst_port))
 
@@ -151,6 +151,7 @@ class SUT:
 
         self.logger.info("disconnecting from client")
         if self.client_socket:
+            self.client_socket.shutdown(socket.SHUT_RDWR)
             self.client_socket.close()
             self.reset()
             self.logger.info("disconnect completed")
