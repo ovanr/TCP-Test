@@ -34,6 +34,8 @@ class SUT:
         # Socket for connecting with another TCP endpoint.
         self.socket = None
 
+        self.listen_port = -1
+
     @property
     def logger(self):
         """
@@ -61,7 +63,6 @@ class SUT:
         """
         Resets the sockets used to connect to and communicate with another TCP endpoint.
         """
-        self.socket = None
         self.client_socket = None
 
     def handle_connect_call(self, parameters: ConnectParameters):
@@ -95,10 +96,12 @@ class SUT:
         self.logger.info("starting socket on %s", parameters.src_port)
         try:
 
-            self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self.socket.settimeout(TIMEOUT)
-            self.socket.bind(("", parameters.src_port))
-            self.socket.listen(1)
+            if self.listen_port != parameters.src_port or not self.socket:
+                self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self.socket.settimeout(TIMEOUT)
+                self.socket.bind(("", parameters.src_port))
+                self.socket.listen(1)
+                self.listen_port = parameters.src_port
 
             self.logger.info("bind and listen successful")
 

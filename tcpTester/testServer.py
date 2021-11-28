@@ -133,9 +133,10 @@ class TestServer:
         self.logger.info("Starting sniffing..")
 
         def pkt_filter(pkt: Packet) -> bool:
-            return TCP in pkt
-                # and \
-                #    pkt[IP].src == self.ip.dst
+            return TCP in pkt and \
+                    pkt.sport >= 10000 and \
+                    pkt.sport <= 12000 and \
+                    pkt[IP].src == self.ip.dst
 
         if self.bg_sniffer:
             self.bg_sniffer.stop(join=True)
@@ -250,7 +251,7 @@ class TestServer:
 
         self.logger.info("Received a packet")
 
-        if self.sport == -1 and self.dport == -1 and \
+        if (self.sport != packet.dport or self.dport != packet.sport) and \
            "S" in packet.sprintf("%TCP.flags%"):
             self.logger.info("Received syn packet %s", packet.__repr__())
             self.reset()
