@@ -311,10 +311,10 @@ CNECTDEF  Sut
         CHAN  IN   OutSutNet                    HOST "localhost"  PORT 2979
         DECODE     OutSutNet ! fromString(s)    <-  ? s
 
-        CHAN  OUT  InSutUser                    HOST "192.168.1.146"  PORT 3027
+        CHAN  OUT  InSutUser                    HOST "localhost"  PORT 3027
         ENCODE     InSutUser ? t                ->  ! toString(t)
 
-        CHAN  IN   OutSutUser                   HOST "192.168.1.146"  PORT 3027
+        CHAN  IN   OutSutUser                   HOST "localhost"  PORT 3027
         DECODE     OutSutUser ! fromString(m)   <-  ? m
 ENDDEF
 
