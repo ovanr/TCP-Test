@@ -1,0 +1,210 @@
+{
+	"name": "Default Models",
+	"models": [
+		{
+			"name": "TCPModel",
+			"generator": "random(never)",
+			"startElementId": "v0",
+			"vertices": [
+				{
+					"id": "v0",
+					"name": "start"
+				},
+				{
+					"id": "v1",
+					"name": "sutSynSend"
+				},
+				{
+					"id": "v2",
+					"name": "testServerSynAckSend"
+				},
+				{
+					"id": "v4",
+					"name": "established"
+				},
+				{
+					"id": "v6",
+					"name": "testServerSynSend"
+				},
+				{
+					"id": "v7",
+					"name": "sutSynAckSend"
+				},
+				{
+					"id": "v8",
+					"name": "sutPackageSend"
+				},
+				{
+					"id": "v9",
+					"name": "testServerPackageSend"
+				},
+				{
+					"id": "v10",
+					"name": "testServerPackageReceived"
+				},
+				{
+					"id": "v11",
+					"name": "sutPackageReceived"
+				},
+				{
+					"id": "v12",
+					"name": "sutActiveConnectionClose"
+				},
+				{
+					"id": "v13",
+					"name": "testServerActiveClose"
+				},
+				{
+					"id": "v15",
+					"name": "testServerFinSend"
+				},
+				{
+					"id": "v16",
+					"name": "sutAckSend"
+				},
+				{
+					"id": "v18",
+					"name": "sutFinSend"
+				},
+				{
+					"id": "v19",
+					"name": "testServerAckSend"
+				}
+			],
+			"edges": [
+				{
+					"id": "e2",
+					"name": "sutSendSym",
+					"sourceVertexId": "v0",
+					"targetVertexId": "v1",
+					"weight": 0.5,
+					"properties": {
+						"description": "Sends a syn from the SUT."
+					}
+				},
+				{
+					"id": "e1",
+					"name": "testServerReceiveSynAndSendSynAck",
+					"sourceVertexId": "v1",
+					"targetVertexId": "v2"
+				},
+				{
+					"id": "e3",
+					"name": "sutReceiveSynAckAndSendAck",
+					"sourceVertexId": "v2",
+					"targetVertexId": "v4"
+				},
+				{
+					"id": "e6",
+					"sourceVertexId": "v6",
+					"targetVertexId": "v7",
+					"name": "sutReceiveSynAndSendSynAck"
+				},
+				{
+					"id": "e7",
+					"name": "testServerReceiveSynAckAndSendAck",
+					"sourceVertexId": "v7",
+					"targetVertexId": "v4"
+				},
+				{
+					"id": "e8",
+					"name": "sutSendDataPayload",
+					"sourceVertexId": "v4",
+					"targetVertexId": "v8",
+					"weight": 0.3
+				},
+				{
+					"id": "e9",
+					"name": "testServerSendDataPayload",
+					"sourceVertexId": "v4",
+					"targetVertexId": "v9",
+					"weight": 0.3
+				},
+				{
+					"id": "e10",
+					"name": "testServerReceiveDataPayloadAndSendAck",
+					"sourceVertexId": "v8",
+					"targetVertexId": "v10"
+				},
+				{
+					"id": "e11",
+					"name": "sutReceiveDataPayloadAndSendAck",
+					"sourceVertexId": "v9",
+					"targetVertexId": "v11"
+				},
+				{
+					"id": "e12",
+					"name": "sutReceiveAck",
+					"sourceVertexId": "v10",
+					"targetVertexId": "v4"
+				},
+				{
+					"id": "e13",
+					"name": "testServerReceiveAck",
+					"sourceVertexId": "v11",
+					"targetVertexId": "v4"
+				},
+				{
+					"id": "e14",
+					"name": "sutSendFin",
+					"sourceVertexId": "v4",
+					"targetVertexId": "v12",
+					"weight": 0.15
+				},
+				{
+					"id": "e15",
+					"name": "testServerSendFin",
+					"sourceVertexId": "v4",
+					"targetVertexId": "v13",
+					"weight": 0.15
+				},
+				{
+					"id": "e16",
+					"name": "testServerReceiveFinAndSendFinAck",
+					"sourceVertexId": "v12",
+					"targetVertexId": "v15"
+				},
+				{
+					"id": "e18",
+					"name": "sutReceiveFinAckAndSendAck",
+					"sourceVertexId": "v15",
+					"targetVertexId": "v16"
+				},
+				{
+					"id": "e19",
+					"name": "testServerReceiveAck",
+					"sourceVertexId": "v16",
+					"targetVertexId": "v0"
+				},
+				{
+					"id": "e20",
+					"sourceVertexId": "v13",
+					"targetVertexId": "v18",
+					"name": "sutReceiveFinAndSendFinAck"
+				},
+				{
+					"id": "e22",
+					"name": "testServerReceiveFinAndSendAck",
+					"sourceVertexId": "v18",
+					"targetVertexId": "v19"
+				},
+				{
+					"id": "e23",
+					"name": "sutReceiveAck",
+					"sourceVertexId": "v19",
+					"targetVertexId": "v0"
+				},
+				{
+					"id": "e4",
+					"name": "testServerSendSyn",
+					"sourceVertexId": "v0",
+					"targetVertexId": "v6",
+					"weight": 0.5,
+					"properties": {
+						"description": "Sends a syn from the test server."
+					}
+				}
+			]
+		}
+	]
+}
