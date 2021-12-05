@@ -168,7 +168,7 @@ PROCDEF sutSendPayload
         (src_port, dst_port :: Int) 
         EXIT 
     ::=
-            InSutUser ? p [[ isSEND(p) /\ isValidPayload(spayload(p)) ]] 
+            InSutUser ? p [[ IF isSEND(p) THEN isValidPayload(spayload(p)) ELSE False FI ]] 
         >->
         (
             (
@@ -214,7 +214,11 @@ PROCDEF sutEstablished
                 sutReceivePayload [ InSutNet, OutSutNet, InSutUser, OutSutUser ] (src_port, dst_port)
         )
         >>>
-            sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
+            (
+                sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
+            ##
+                EXIT
+            )
 ENDDEF
 
 PROCDEF tsCloseEnd
@@ -278,11 +282,9 @@ PROCDEF tcpBehavior
     )
     >>> ACCEPT ? src_port ? dst_port 
         IN
-            ( 
-                    sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
-                ##
-                    sutPassiveActiveClose [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
-            )
+                sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
+            >>>
+                sutPassiveActiveClose [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
             >>>
                 tcpBehavior [ InSutNet, OutSutNet, InSutUser, OutSutUser ] () 
         NI
@@ -305,16 +307,16 @@ CNECTDEF  Sut
    ::=
         CLIENTSOCK
 
-        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 2979
+        CHAN  OUT  InSutNet                     HOST "10.42.0.169"  PORT 2979
         ENCODE     InSutNet ? x                 ->  ! toString(x)
 
-        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 2979
+        CHAN  IN   OutSutNet                    HOST "10.42.0.169"  PORT 2979
         DECODE     OutSutNet ! fromString(s)    <-  ? s
 
-        CHAN  OUT  InSutUser                    HOST "192.168.1.146"  PORT 3027
+        CHAN  OUT  InSutUser                    HOST "127.0.0.1"  PORT 3000
         ENCODE     InSutUser ? t                ->  ! toString(t)
 
-        CHAN  IN   OutSutUser                   HOST "192.168.1.146"  PORT 3027
+        CHAN  IN   OutSutUser                   HOST "127.0.0.1"  PORT 3000
         DECODE     OutSutUser ! fromString(m)   <-  ? m
 ENDDEF
 
