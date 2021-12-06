@@ -116,17 +116,24 @@ ENDDEF
 -- ----------------------------------------------------------------------------------------- --
 
 PROCDEF sutPassiveOpen 
-        [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
         ()
         EXIT Int # Int
    ::=
             InSutUser ? c [[ isListenUserCall(c) ]] 
         >->
-            InSutNet ? s [[ (dport(s) == lport(c)) /\ isSyn(s) ]] 
+            InSutNet ? s [[ isSyn(s) /\ 
+                            (dport(s) == lport(c)) ]]
         >->
             OutSutNet ! synack(dport(s), sport(s)) 
         >->
-            InSutNet ? a [[ isAck(a) /\ (payload(a) == "") /\ (sport(a) == sport(s)) /\ (dport(a) == dport(s)) ]] 
+            InSutNet ? a [[ isAck(a) /\ 
+                            (payload(a) == "") /\ 
+                            (sport(a) == sport(s)) /\ 
+                            (dport(a) == dport(s)) ]] 
         >->
             OutSutUser ! SUCCESS
         >->
@@ -135,15 +142,21 @@ ENDDEF
 
 -- the sut enters active mode (Initiates a new connection)
 PROCDEF sutActiveOpen 
-        [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
         ()
         EXIT Int # Int
-	::=
-	    InSutUser ? c [[ isConnectUserCall(c) ]]
+    ::=
+        InSutUser ? c [[ isConnectUserCall(c) ]]
     >-> 
-        OutSutNet ? s [[ (dport(s) == cport(c)) /\ isSyn(s) ]] 
+        OutSutNet ? s [[ isSyn(s) /\ 
+                         (dport(s) == cport(c)) ]] 
     >->
-	    InSutNet ? sa [[ (sport(sa) == dport(s)) /\ (dport(sa) == sport(s)) /\ isSynAck(sa) ]] 
+        InSutNet ? sa [[ isSynAck(sa) /\
+                         (sport(sa) == dport(s)) /\ 
+                         (dport(sa) == sport(s)) ]]
     >->
         (   
             (
@@ -164,23 +177,33 @@ ENDDEF
 
 
 PROCDEF sutSendPayload  
-        [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
         (src_port, dst_port :: Int) 
         EXIT 
     ::=
-            InSutUser ? p [[ IF isSEND(p) THEN isValidPayload(spayload(p)) ELSE False FI ]] 
+            InSutUser ? p [[ IF isSEND(p) THEN isValidPayload(spayload(p)) 
+                                          ELSE False FI ]] 
         >->
         (
             (
-                    OutSutNet ? pa [[ isAck(pa) /\ (dport(pa) == dst_port) /\ (sport(pa) == src_port) /\ (payload(pa) == spayload(p)) ]]
+                    OutSutNet ? pa [[ isAck(pa) /\ 
+                                      (dport(pa) == dst_port) /\ 
+                                      (sport(pa) == src_port) /\ 
+                                      (payload(pa) == spayload(p)) ]]
                 >->
-	                InSutNet ? a [[ (sport(a) == dst_port) /\ (dport(a) == src_port) /\ isAck(a) /\ (payload(a) == "") ]]
+                    InSutNet ? a [[ isAck(a) /\ 
+                                    (sport(a) == dst_port) /\ 
+                                    (dport(a) == src_port) /\ 
+                                    (payload(a) == "") ]]
                 >->
                     EXIT
             )
         |||
             (
-	                OutSutUser ! SUCCESS
+                    OutSutUser ! SUCCESS
                 >->
                     EXIT
             )
@@ -188,13 +211,22 @@ PROCDEF sutSendPayload
 ENDDEF
 
 PROCDEF sutReceivePayload  
-        [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
         (src_port, dst_port :: Int) 
         EXIT 
     ::=
-	        InSutNet ? pa [[ (sport(pa) == dst_port) /\ (dport(pa) == src_port) /\ isAck(pa) /\ isValidPayload(payload(pa)) ]]
+            InSutNet ? pa [[ isAck(pa) /\ 
+                             (sport(pa) == dst_port) /\ 
+                             (dport(pa) == src_port) /\ 
+                             isValidPayload(payload(pa)) ]]
         >->
-            OutSutNet ? a [[ isAck(a) /\ (dport(a) == dst_port) /\ (sport(a) == src_port) /\ (payload(a) == "") ]]
+            OutSutNet ? a [[ isAck(a) /\ 
+                             (dport(a) == dst_port) /\ 
+                             (sport(a) == src_port) /\ 
+                             (payload(a) == "") ]]
         >->
             InSutUser ! RECEIVE
         >->
@@ -204,29 +236,40 @@ PROCDEF sutReceivePayload
 ENDDEF
 
 PROCDEF sutEstablished 
-        [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
         (src_port, dst_port :: Int) 
         EXIT 
     ::=
         (
-                sutSendPayload [ InSutNet, OutSutNet, InSutUser, OutSutUser ] (src_port, dst_port)
+                sutSendPayload [ InSutNet, OutSutNet, InSutUser, OutSutUser ] 
+                               (src_port, dst_port)
             ##
-                sutReceivePayload [ InSutNet, OutSutNet, InSutUser, OutSutUser ] (src_port, dst_port)
+                sutReceivePayload [ InSutNet, OutSutNet, InSutUser, OutSutUser ] 
+                                  (src_port, dst_port)
         )
         >>>
             (
-                sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
-            ##
-                EXIT
+                    sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] 
+                                   ( src_port, dst_port )
+                ##
+                    EXIT
             )
 ENDDEF
 
 PROCDEF tsCloseEnd
-        [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
         (src_port, dst_port :: Int) 
         EXIT 
     ::=
-        InSutNet ? f [[ (sport(f) == dst_port) /\ (dport(f) == src_port) /\ isFinAck(f) ]]
+        InSutNet ? f [[ isFinAck(f) /\ 
+                        (sport(f) == dst_port) /\ 
+                        (dport(f) == src_port) ]]
     >-> 
         OutSutNet ! ack(src_port, dst_port)
     >->
@@ -234,45 +277,102 @@ PROCDEF tsCloseEnd
 ENDDEF
 
 PROCDEF sutCloseEnd
-        [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
         (src_port, dst_port :: Int) 
         EXIT 
     ::=
         InSutUser ! CLOSE
     >->
         (
-	        (
+            (
                     OutSutNet ! finack(src_port, dst_port) 
                 >->
-	                InSutNet ? a [[ (sport(a) == dst_port) /\ (dport(a) == src_port) /\ isAck(a) /\ (payload(a) == "") ]]
+                    InSutNet ? a [[ isAck(a) /\ 
+                                    (sport(a) == dst_port) /\ 
+                                    (dport(a) == src_port) /\ 
+                                    (payload(a) == "") ]]
                 >->
                     EXIT
             )
         |||
             (
-	                OutSutUser ! SUCCESS
+                    OutSutUser ! SUCCESS
                 >-> 
                     EXIT
             )
         )
 ENDDEF
 
+PROCDEF threeWayEnd
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
+        (src_port, dst_port :: Int) 
+        EXIT 
+    ::=
+    (
+        (
+            (
+                    InSutNet ? f [[ isFinAck(f) /\ 
+                                    (sport(f) == dst_port) /\ 
+                                    (dport(f) == src_port) ]]
+                >->
+                    OutSutNet ! finack(src_port, dst_port) 
+                >->
+                    InSutNet ? a [[ isAck(a) /\ 
+                                    (sport(a) == dst_port) /\ 
+                                    (dport(a) == src_port) /\ 
+                                    (payload(a) == "") ]]
+                >->
+                    EXIT
+            )
+        |||
+            (
+                    InSutUser ! CLOSE 
+                >->
+                    OutSutUser ! SUCCESS
+                >-> 
+                    EXIT
+            )
+        )
+    )
+ENDDEF
+
 PROCDEF sutPassiveActiveClose 
-        [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
         (src_port, dst_port :: Int) 
         EXIT 
     ::=
         (
-                sutCloseEnd [ InSutNet, OutSutNet, InSutUser, OutSutUser ] (src_port, dst_port)
-            |||
-                tsCloseEnd [ InSutNet, OutSutNet, InSutUser, OutSutUser ] (src_port, dst_port)
+            (
+                    tsCloseEnd [ InSutNet, OutSutNet, InSutUser, OutSutUser ] 
+                               (src_port, dst_port)
+                ||| 
+                    sutCloseEnd [ InSutNet, OutSutNet, InSutUser, OutSutUser ] 
+                                (src_port, dst_port)
+            )
+        ## 
+            (
+                threeWayEnd [ InSutNet, OutSutNet, InSutUser, OutSutUser ] 
+                            (src_port, dst_port)
+            )
         )
         >>>
             EXIT
 ENDDEF
 
 PROCDEF tcpBehavior 
-        [ InSutNet :: TCPPacket; OutSutNet :: TCPPacket; InSutUser :: TCPUserCallInput; OutSutUser :: TCPUserCallOutput ] 
+        [ InSutNet :: TCPPacket; 
+          OutSutNet :: TCPPacket; 
+          InSutUser :: TCPUserCallInput; 
+          OutSutUser :: TCPUserCallOutput ] 
         ()
    ::=
     (   
@@ -282,9 +382,11 @@ PROCDEF tcpBehavior
     )
     >>> ACCEPT ? src_port ? dst_port 
         IN
-                sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
+                sutEstablished [ InSutNet, OutSutNet, InSutUser, OutSutUser ] 
+                               (src_port, dst_port)
             >>>
-                sutPassiveActiveClose [ InSutNet, OutSutNet, InSutUser, OutSutUser ] ( src_port, dst_port )
+                sutPassiveActiveClose [ InSutNet, OutSutNet, InSutUser, OutSutUser ] 
+                                      (src_port, dst_port)
             >>>
                 tcpBehavior [ InSutNet, OutSutNet, InSutUser, OutSutUser ] () 
         NI
@@ -307,16 +409,16 @@ CNECTDEF  Sut
    ::=
         CLIENTSOCK
 
-        CHAN  OUT  InSutNet                     HOST "10.42.0.169"  PORT 2979
+        CHAN  OUT  InSutNet                     HOST "localhost"  PORT 2977
         ENCODE     InSutNet ? x                 ->  ! toString(x)
 
-        CHAN  IN   OutSutNet                    HOST "10.42.0.169"  PORT 2979
+        CHAN  IN   OutSutNet                    HOST "localhost"  PORT 2977
         DECODE     OutSutNet ! fromString(s)    <-  ? s
 
-        CHAN  OUT  InSutUser                    HOST "127.0.0.1"  PORT 3000
+        CHAN  OUT  InSutUser                    HOST "192.168.1.147"  PORT 3028
         ENCODE     InSutUser ? t                ->  ! toString(t)
 
-        CHAN  IN   OutSutUser                   HOST "127.0.0.1"  PORT 3000
+        CHAN  IN   OutSutUser                   HOST "192.168.1.147"  PORT 3028
         DECODE     OutSutUser ! fromString(m)   <-  ? m
 ENDDEF
 
