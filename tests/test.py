@@ -65,7 +65,6 @@ class TCPModel:
     # State functions
 
     def established(self):
-
         pass
 
     def start(self):
@@ -74,117 +73,118 @@ class TCPModel:
         self._test_ts_port = self.get_random_unique_port()
         print(f"Test TS port: {self._test_ts_port}")
 
-    def sutAckSend(self):
+    def sut_active_close(self):
         pass
 
-    def sutActiveConnectionClose(self):
+    def sut_active_connect(self):
         pass
 
-    def sutFinSend(self):
+    def sut_fin_ack_received(self):
         pass
 
-    def sutPackageReceived(self):
+    def sut_fin_ack_send(self):
         pass
 
-    def sutPackageSend(self):
+    def sut_listen(self):
         pass
 
-    def sutSynAckSend(self):
+    def sut_passive_close(self):
         pass
 
-    def sutSynSend(self):
+    def sut_passive_connect(self):
         pass
 
-    def testServerAckSend(self):
+    def sut_payload_received(self):
         pass
 
-    def testServerActiveClose(self):
+    def sut_syn_ack_send(self):
         pass
 
-    def testServerFinSend(self):
+    def sut_syn_recvd_send_ack(self):
         pass
 
-    def testServerPackageReceived(self):
+    def sut_wait_for_ack(self):
         pass
 
-    def testServerPackageSend(self):
-        pass
-
-    def testServerSynAckSend(self):
-        pass
-
-    def testServerSynSend(self):
+    def sut_ack_send(self):
         pass
 
     # Transition functions
 
-    def sutReceiveAck(self):
-
-        pass
-
-    def sutReceiveDataPayloadAndSendAck(self):
-        pass
-
-    def sutReceiveFinAckAndSendAck(self):
-        pass
-
-    def sutReceiveFinAndSendFinAck(self):
-        pass
-
-    def sutReceiveSynAckAndSendAck(self):
-        pass
-
-    def sutReceiveSynAndSendSynAck(self):
-        sut_result = self.sut_file_client.readline()
-
-        pass
-
-    def sutSendDataPayload(self):
-        pass
-
-    def sutSendFin(self):
-        pass
-
-    def sutSendSym(self):
-        pass
-
-    def testServerReceiveAck(self):
-        pass
-
-    def testServerReceiveDataPayloadAndSendAck(self):
-        pass
-
-    def testServerReceiveFinAndSendAck(self):
-        pass
-
-    def testServerReceiveFinAndSendFinAck(self):
-        pass
-
-    def testServerReceiveSynAckAndSendAck(self):
-        pass
-
-    def testServerReceiveSynAndSendSynAck(self):
-        pass
-
-    def testServerSendDataPayload(self):
-        pass
-
-    def testServerSendFin(self):
-        pass
-
-    def testServerSendSyn(self):
+    def sut_enter_listen_state(self):
         self.sut_file_client.write(
             jsonpickle.encode(UserCall(
                 command_type=CommandType.LISTEN,
                 command_parameters=ListenParameters(self._test_sut_port))
-            )
+            ) + "\n"
         )
         time.sleep(0.05)
-        self.ts_file_client.write(jsonpickle.encode(TCPPacket(
-            sport=self._test_ts_port,
-            dport=self._test_sut_port,
-            seq=SEQ.SEQ_VALID,
-            ack=ACK.ACK_VALID,
-            flags=[TCPFlag.SYN],
-            payload=bytes()
-        )))
+
+    def sut_payload_receive(self):
+        pass
+
+    def sut_receive_ack(self):
+        pass
+
+    def sut_receive_fin(self):
+        pass
+
+    def sut_receive_fin_ack(self):
+        pass
+
+    def sut_receive_handshake_ack(self):
+        self.ts_file_client.write(
+            jsonpickle.encode(
+                TCPPacket(
+                    sport=self._test_ts_port,
+                    dport=self._test_sut_port,
+                    seq=SEQ.SEQ_VALID,
+                    ack=ACK.ACK_VALID,
+                    flags=[TCPFlag.ACK],
+                    payload=bytes()
+                )
+            ) + "\n"
+        )
+        time.sleep(0.05)
+
+        package = jsonpickle.decode(self.sut_file_client.readline())
+        print("SUT send package: %s", package)
+
+    def sut_receive_syn(self):
+        self.ts_file_client.write(
+            jsonpickle.encode(
+                TCPPacket(
+                    sport=self._test_ts_port,
+                    dport=self._test_sut_port,
+                    seq=SEQ.SEQ_VALID,
+                    ack=ACK.ACK_VALID,
+                    flags=[TCPFlag.SYN],
+                    payload=bytes()
+                )
+            ) + "\n"
+        )
+
+    def sut_receive_syn_ack(self):
+        #package = jsonpickle.decode(self.ts_file_client.readline())
+        #print("SUT Send: %s", package)
+        pass
+
+    def sut_send_ack(self):
+        pass
+
+    def sut_send_fin(self):
+        pass
+
+    def sut_send_fin_ack(self):
+        pass
+
+    def sut_send_payload(self):
+        pass
+
+    def sut_send_syn(self):
+        pass
+
+    def sut_send_syn_ack(self):
+        package = jsonpickle.decode(self.ts_file_client.readline())
+        print("SUT Send: %s", package)
+        pass
