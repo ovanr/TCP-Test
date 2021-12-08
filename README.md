@@ -18,8 +18,9 @@ pip install -r requirements.txt
 You can find the existing testcases under the folder **tcpTester/testCases**. Each test case is represented by a python file, following the textX.py format, where X is the number of the test case. To create a new testcase we must create a new python file following the naming convention. For the purposes of this tutorial, let's say we make test15.py.
 ### Structuring the file
 First we will have to import relevant classes and tools for making a testcase. These imports are the same for any testcase.
+
 ```python
-from tcpTester.testCommand import (
+from tests.tcpTester import (
     CommandType,
     ConnectParameters,
     ListenParameters,
@@ -28,8 +29,8 @@ from tcpTester.testCommand import (
     ReceiveParameters,
     TestCommand,
 )
-from tcpTester.config import TEST_SERVER_IP
-from tcpTester.baseTestCase import BaseTestCase
+from tests.tcpTester import TEST_SERVER_IP
+from tests.tcpTester import BaseTestCase
 ```
 Afterwards, it will be necessary to define the ports for the Test Server (TS) and the  System Under Test (SUT). 
 * Our convention is to use port 6000 + testNumber-1 for the TS port, and 5000 + testNumber-1 for the SUT port. 

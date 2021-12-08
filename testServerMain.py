@@ -6,11 +6,12 @@ import socket
 
 import configparser
 import logging
+
+import jsonpickle
 from termcolor import colored
 
-from tcpTester import set_up_logging
-from tcpTester.testServer import TestServer
-from tcpTester.types import TCPPacket
+from tests import set_up_logging
+from tests import TestServer
 
 LOG_PREFIX = "./test_server"
 
@@ -33,16 +34,16 @@ def runner(ts_iface: str, sut_ip: str, mbt_port: int):
             if not raw.strip():
                 continue
 
-            logging.getLogger("TestServer").info("Got input: %s", raw)
+            packet = jsonpickle.decode(raw)
+            logging.getLogger("TestServer").info("Got input: %s", packet)
 
-            packet = TCPPacket.from_torxakis(raw)
+
             ts.handle_send_command(packet)
 
     except OSError as os_err:
         logging.getLogger("TestServer").error("Connection to the wbt failed - OSError: %s", os_err.strerror)
         sys.exit(-1)
     except Exception as err:
-        raise err
         logging.getLogger("TestServer").error("Unexpected error: %s", err)
         sys.exit(-2)
 
@@ -70,7 +71,7 @@ if __name__ == "__main__":
     try:
         set_up_logging(LOG_PREFIX,
                        console_level=config["logging"]["console"],
-                       enable_file_logging=bool(config["logging"]["file_logging"]))
+                       enable_file_logging=bool(int(config["logging"]["file_logging"])))
     except KeyError as exc:
         print(colored("Config file does no contain logging settings!", "red"))
         sys.exit(-1)

@@ -6,11 +6,12 @@ import socket
 
 import configparser
 import logging
+
+import jsonpickle
 from termcolor import colored
 
-from tcpTester import set_up_logging
-from tcpTester.sut import SUT
-from tcpTester.types import UserCall
+from tests import set_up_logging
+from tests import SUT
 
 LOG_PREFIX = "./sut"
 
@@ -26,16 +27,19 @@ def runner(ts_ip: str, mbt_port: int):
 
         while True:
             raw = mbt_file_client.readline()
-            logging.getLogger("SUTMain").info("Got input: %s", raw)
+
             if not raw:
                 break
 
             if not raw.strip():
                 continue
+            user_call = jsonpickle.decode(raw)
+            logging.getLogger("SUTMain").info("Got input: %s", user_call)
 
-            user_call = UserCall.from_torxakis(raw)
-            resp = sut.handle_user_call(user_call).to_torxakis()
-            logging.getLogger("SUTMain").info("Sending response: %s", resp)
+            user_call_res = sut.handle_user_call(user_call)
+            logging.getLogger("SUTMain").info("Sending response: %s", user_call_res)
+
+            resp = jsonpickle.encode(user_call_res)
             mbt_file_client.write(resp + "\n")
             mbt_file_client.flush()
 
@@ -68,7 +72,7 @@ if __name__ == "__main__":
 
         set_up_logging(LOG_PREFIX,
                        console_level=config["logging"]["console"],
-                       enable_file_logging=bool(config["logging"]["file_logging"]))
+                       enable_file_logging=bool(int(config["logging"]["file_logging"])))
     except KeyError as exc:
         print(colored("Config file does no contain logging settings!", "red"))
         sys.exit(-1)

@@ -3,7 +3,7 @@ import socket
 import random
 from typing import cast
 
-from tcpTester.types import (
+from tests.tcpTester.types import (
     CommandType,
     ConnectParameters,
     ListenParameters,

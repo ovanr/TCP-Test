@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
 from random import randint
-from typing import Optional, List, TextIO
+from typing import TextIO
 
 from scapy.all import *
 from scapy.layers.inet import TCP, IP
 
-from tcpTester.types import ACK, SEQ, TCPPacket, TCPFlag
+from tests.tcpTester.types import ACK, SEQ, TCPPacket, TCPFlag
 
 class TestServer:
     """
