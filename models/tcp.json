@@ -119,7 +119,7 @@
 				},
 				{
 					"id": "e11",
-					"name": "sut_ack_send",
+					"name": "sut_ack_send_2",
 					"sourceVertexId": "v9",
 					"targetVertexId": "v4"
 				},
@@ -145,7 +145,7 @@
 				},
 				{
 					"id": "e18",
-					"name": "sut_send_ack",
+					"name": "sut_ack_send",
 					"sourceVertexId": "v15",
 					"targetVertexId": "v0"
 				},
@@ -157,7 +157,7 @@
 				},
 				{
 					"id": "e22",
-					"name": "sut_receive_ack",
+					"name": "sut_receive_ack_2",
 					"sourceVertexId": "v18",
 					"targetVertexId": "v0"
 				},

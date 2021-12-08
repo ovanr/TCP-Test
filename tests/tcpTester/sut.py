@@ -74,8 +74,7 @@ class SUT:
         try:
             self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self.client_socket.settimeout(TIMEOUT)
-            port = random.randint(10000, 12000)
-            self.client_socket.bind(("", port))
+            self.client_socket.bind(("", parameters.src_port))
             self.logger.info("bind successful")
             self.client_socket.connect((self.ts_ip, parameters.dst_port))
 

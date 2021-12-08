@@ -105,6 +105,7 @@ class ListenParameters(WithShow):
 
 @dataclass
 class ConnectParameters(WithShow):
+    src_port: int
     dst_port: int
 
 Parameters = Union[ListenParameters,

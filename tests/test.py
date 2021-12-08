@@ -8,6 +8,7 @@ import jsonpickle
 from termcolor import colored
 
 from tests import UserCall, CommandType, ListenParameters, TCPPacket, SEQ, ACK, TCPFlag
+from tests.tcpTester.types import UserCallResult, UserCallResultType, ConnectParameters
 
 
 class TCPModel:
@@ -95,7 +96,22 @@ class TCPModel:
         pass
 
     def sut_payload_received(self):
-        pass
+        self.sut_file_client.write(
+            jsonpickle.encode(
+                UserCall(
+                    command_type=CommandType.RECEIVE
+                )
+            ) + "\n"
+        )
+        self.sut_file_client.flush()
+
+        package: UserCallResult = jsonpickle.decode(self.sut_file_client.readline())
+        print("SUT usercall result: %s", package)
+
+        if package.status != UserCallResultType.RECEIVE:
+            raise AssertionError(f"Expected success response, got: {package}")
+        if package.payload != b"AltwalkerSaysHi":
+            raise AssertionError(f"Expected payload \"AltwalkerSaysHi\", got: {package}")
 
     def sut_syn_ack_send(self):
         pass
@@ -104,9 +120,6 @@ class TCPModel:
         pass
 
     def sut_wait_for_ack(self):
-        pass
-
-    def sut_ack_send(self):
         pass
 
     # Transition functions
@@ -118,20 +131,88 @@ class TCPModel:
                 command_parameters=ListenParameters(self._test_sut_port))
             ) + "\n"
         )
-        self.ts_file_client.flush()
+        self.sut_file_client.flush()
         time.sleep(0.05)
 
     def sut_payload_receive(self):
-        pass
+        self.ts_file_client.write(
+            jsonpickle.encode(
+                TCPPacket(
+                    sport=self._test_ts_port,
+                    dport=self._test_sut_port,
+                    seq=SEQ.SEQ_VALID,
+                    ack=ACK.ACK_VALID,
+                    flags=[TCPFlag.ACK],
+                    payload=b"AltwalkerSaysHi"
+                )
+            ) + "\n"
+        )
+        self.ts_file_client.flush()
 
     def sut_receive_ack(self):
         pass
 
+    def sut_receive_ack_2(self):
+        package: TCPPacket = jsonpickle.decode(self.ts_file_client.readline())
+        print("SUT Send: %s", package)
+
+        if not (TCPFlag.ACK in package.flags and TCPFlag.FIN in package.flags):
+            raise AssertionError(f"Expected ack package, got: {package}")
+        self.ts_file_client.write(
+            jsonpickle.encode(
+                TCPPacket(
+                    sport=self._test_ts_port,
+                    dport=self._test_sut_port,
+                    seq=SEQ.SEQ_VALID,
+                    ack=ACK.ACK_VALID,
+                    flags=[TCPFlag.ACK],
+                    payload=bytes()
+                )
+            ) + "\n"
+        )
+        self.ts_file_client.flush()
+
+        package: UserCallResult = jsonpickle.decode(self.sut_file_client.readline())
+        print("SUT usercall result: %s", package)
+
+        if package.status != UserCallResultType.SUCCESS:
+            raise AssertionError(f"Expected success response, got: {package}")
+
     def sut_receive_fin(self):
-        pass
+        self.ts_file_client.write(
+            jsonpickle.encode(
+                TCPPacket(
+                    sport=self._test_ts_port,
+                    dport=self._test_sut_port,
+                    seq=SEQ.SEQ_VALID,
+                    ack=ACK.ACK_VALID,
+                    flags=[TCPFlag.FIN, TCPFlag.ACK],
+                    payload=bytes()
+                )
+            ) + "\n"
+        )
+        self.ts_file_client.flush()
 
     def sut_receive_fin_ack(self):
-        pass
+        package: TCPPacket = jsonpickle.decode(self.ts_file_client.readline())
+        print("SUT Send: %s", package)
+
+        if not (TCPFlag.ACK in package.flags and TCPFlag.FIN in package.flags) :
+            raise AssertionError(f"Expected fin package, got: {package}")
+
+        self.ts_file_client.write(
+            jsonpickle.encode(
+                TCPPacket(
+                    sport=self._test_ts_port,
+                    dport=self._test_sut_port,
+                    seq=SEQ.SEQ_VALID,
+                    ack=ACK.ACK_VALID,
+                    flags=[TCPFlag.FIN, TCPFlag.ACK],
+                    payload=bytes()
+                )
+            ) + "\n"
+        )
+        self.ts_file_client.flush()
 
     def sut_receive_handshake_ack(self):
         self.ts_file_client.write(
@@ -149,8 +230,11 @@ class TCPModel:
         self.ts_file_client.flush()
         time.sleep(0.05)
 
-        package = jsonpickle.decode(self.sut_file_client.readline())
-        print("SUT send package: %s", package)
+        package: UserCallResult = jsonpickle.decode(self.sut_file_client.readline())
+        print("SUT usercall result: %s", package)
+
+        if package.status != UserCallResultType.SUCCESS:
+            raise AssertionError(f"Expected success response, got: {package}")
 
     def sut_receive_syn(self):
         self.ts_file_client.write(
@@ -168,26 +252,91 @@ class TCPModel:
         self.ts_file_client.flush()
 
     def sut_receive_syn_ack(self):
-        #package = jsonpickle.decode(self.ts_file_client.readline())
-        #print("SUT Send: %s", package)
-        pass
+        package: TCPPacket = jsonpickle.decode(self.ts_file_client.readline())
+        print("SUT Send: %s", package)
 
-    def sut_send_ack(self):
-        pass
+        if not (TCPFlag.SYN in package.flags):
+            raise AssertionError(f"Expected syn package, got: {package}")
+
+        self.ts_file_client.write(
+            jsonpickle.encode(
+                TCPPacket(
+                    sport=self._test_ts_port,
+                    dport=self._test_sut_port,
+                    seq=SEQ.SEQ_VALID,
+                    ack=ACK.ACK_VALID,
+                    flags=[TCPFlag.SYN, TCPFlag.ACK],
+                    payload=bytes()
+                )
+            ) + "\n"
+        )
+        self.ts_file_client.flush()
+
+    def sut_ack_send(self):
+        package: TCPPacket = jsonpickle.decode(self.ts_file_client.readline())
+        print("SUT Send: %s", package)
+
+        if not (TCPFlag.ACK in package.flags):
+            raise AssertionError(f"Expected ack package, got: {package}")
+
+        package: UserCallResult = jsonpickle.decode(self.sut_file_client.readline())
+        print("SUT usercall result: %s", package)
+
+        if package.status != UserCallResultType.SUCCESS:
+            raise AssertionError(f"Expected success response, got: {package}")
+
+    def sut_ack_send_2(self):
+        package: TCPPacket = jsonpickle.decode(self.ts_file_client.readline())
+        print("SUT Send: %s", package)
+
+        if not (TCPFlag.ACK in package.flags):
+            raise AssertionError(f"Expected ack package, got: {package}")
 
     def sut_send_fin(self):
-        pass
+        self.sut_file_client.write(
+            jsonpickle.encode(
+                UserCall(
+                    command_type=CommandType.CLOSE
+                )
+            ) + "\n"
+        )
+        self.sut_file_client.flush()
 
     def sut_send_fin_ack(self):
-        pass
+        package: TCPPacket = jsonpickle.decode(self.ts_file_client.readline())
+        print("SUT Send: %s", package)
+
+        if (TCPFlag.ACK not in package.flags) or TCPFlag.FIN in package.flags:
+            raise AssertionError(f"Expected ack package, got: {package}")
+
+        self.sut_file_client.write(
+            jsonpickle.encode(
+                UserCall(
+                    command_type=CommandType.CLOSE
+                )
+            ) + "\n"
+        )
+        self.sut_file_client.flush()
 
     def sut_send_payload(self):
         pass
 
     def sut_send_syn(self):
-        pass
+        self.sut_file_client.write(
+            jsonpickle.encode(
+                UserCall(
+                    command_type=CommandType.CONNECT,
+                    command_parameters=ConnectParameters(dst_port=self._test_ts_port, src_port=self._test_sut_port)
+                )
+            )+ "\n"
+        )
+        self.sut_file_client.flush()
+        time.sleep(0.05)
 
     def sut_send_syn_ack(self):
-        package = jsonpickle.decode(self.ts_file_client.readline())
+        package: TCPPacket = jsonpickle.decode(self.ts_file_client.readline())
         print("SUT Send: %s", package)
-        pass
+
+        if not (TCPFlag.ACK in package.flags and TCPFlag.SYN in package.flags):
+            raise AssertionError(f"Expected syn ack package, got: {package}")
+
