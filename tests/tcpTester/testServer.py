@@ -3,6 +3,7 @@
 from random import randint
 from typing import TextIO
 
+import jsonpickle
 from scapy.all import *
 from scapy.layers.inet import TCP, IP
 
@@ -287,7 +288,8 @@ class TestServer:
             payload=packet[Raw].load if Raw in packet else b''
         )
 
-        raw = abs_packet.to_torxakis()
-        self.logger.info("Forwarding packet: %s", raw)
+
+        self.logger.info("Forwarding packet: %s", abs_packet)
+        raw = jsonpickle.encode(abs_packet)
         self.mbt_client.write(raw + "\n")
         self.mbt_client.flush()

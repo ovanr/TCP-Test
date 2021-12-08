@@ -118,6 +118,7 @@ class TCPModel:
                 command_parameters=ListenParameters(self._test_sut_port))
             ) + "\n"
         )
+        self.ts_file_client.flush()
         time.sleep(0.05)
 
     def sut_payload_receive(self):
@@ -145,6 +146,7 @@ class TCPModel:
                 )
             ) + "\n"
         )
+        self.ts_file_client.flush()
         time.sleep(0.05)
 
         package = jsonpickle.decode(self.sut_file_client.readline())
@@ -163,6 +165,7 @@ class TCPModel:
                 )
             ) + "\n"
         )
+        self.ts_file_client.flush()
 
     def sut_receive_syn_ack(self):
         #package = jsonpickle.decode(self.ts_file_client.readline())
