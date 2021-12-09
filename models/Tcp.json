@@ -1,0 +1,278 @@
+{
+	"name": "AltwalkerTCPModel",
+	"models": [
+		{
+			"name": "TCPModel",
+			"generator": "random(never)",
+			"startElementId": "v0",
+			"vertices": [
+				{
+					"id": "v0",
+					"name": "start"
+				},
+				{
+					"id": "v1",
+					"name": "sut_active_connect",
+					"properties": {
+						"color": "#f6d32d"
+					}
+				},
+				{
+					"id": "v2",
+					"name": "sut_send_final_handshake_ack",
+					"properties": {
+						"description": "SUT Connect call will have succeeded and the SUT will send a final ACK.",
+						"color": "#f6d32d"
+					}
+				},
+				{
+					"id": "v4",
+					"name": "established",
+					"properties": {
+						"description": "SUT is in an established TCP state.",
+						"color": "#613583"
+					}
+				},
+				{
+					"id": "v6",
+					"name": "sut_passive_connect",
+					"properties": {
+						"description": "Connection establishment with the SUT as the passive party.",
+						"color": "#f6d32d"
+					}
+				},
+				{
+					"id": "v7",
+					"name": "sut_syn_ack_send",
+					"properties": {
+						"color": "#f6d32d"
+					}
+				},
+				{
+					"id": "v8",
+					"name": "sut_wait_for_ack",
+					"properties": {
+						"description": "SUT is waiting for the send data to be acknowledged.",
+						"color": "#1c71d8"
+					}
+				},
+				{
+					"id": "v9",
+					"name": "sut_payload_received",
+					"properties": {
+						"color": "#1c71d8",
+						"description": "SUT gets a user call to receive the sent data."
+					}
+				},
+				{
+					"id": "v12",
+					"name": "sut_active_close",
+					"properties": {
+						"description": "SUT is in an active close state and waits for an incoming fin from the communication partner.",
+						"color": "#e01b24"
+					}
+				},
+				{
+					"id": "v13",
+					"name": "sut_passive_close",
+					"properties": {
+						"color": "#e01b24",
+						"description": "The SUT is in a passive close state. The partner wants to terminate the connection."
+					}
+				},
+				{
+					"id": "v15",
+					"name": "sut_fin_ack_received",
+					"properties": {
+						"color": "#e01b24",
+						"description": "SUT has received the fin ack from the communication partner.\nIt now sends a final ack and returns from the close call."
+					}
+				},
+				{
+					"id": "v18",
+					"name": "sut_send_fin_ack",
+					"properties": {
+						"color": "#e01b24"
+					}
+				},
+				{
+					"id": "v3",
+					"name": "sut_listen",
+					"properties": {
+						"description": "SUT is now listening for incoming connections.",
+						"color": "#f6d32d"
+					}
+				},
+				{
+					"id": "v5",
+					"name": "sut_wait_final_ack",
+					"properties": {
+						"description": "SUT is waiting for the final ack.",
+						"color": "#e01b24"
+					}
+				}
+			],
+			"edges": [
+				{
+					"id": "e2",
+					"name": "sut_send_syn",
+					"sourceVertexId": "v0",
+					"targetVertexId": "v1",
+					"weight": 0.5,
+					"properties": {
+						"description": "Sends a syn from the SUT."
+					}
+				},
+				{
+					"id": "e1",
+					"name": "sut_syn_ack_received",
+					"sourceVertexId": "v1",
+					"targetVertexId": "v2",
+					"properties": {
+						"description": "SUT has received a syn ack package."
+					}
+				},
+				{
+					"id": "e3",
+					"name": "sut_handshake_ack_send",
+					"sourceVertexId": "v2",
+					"targetVertexId": "v4",
+					"properties": {
+						"description": "SUT has sent the final ACK of the handshake."
+					}
+				},
+				{
+					"id": "e6",
+					"sourceVertexId": "v6",
+					"targetVertexId": "v7",
+					"name": "sut_send_syn_ack",
+					"properties": {
+						"description": "SUT sends syn ack package."
+					}
+				},
+				{
+					"id": "e7",
+					"name": "sut_receive_handshake_ack",
+					"sourceVertexId": "v7",
+					"targetVertexId": "v4",
+					"properties": {
+						"description": "SUT receive final handshake ACK."
+					}
+				},
+				{
+					"id": "e8",
+					"name": "sut_send_payload",
+					"sourceVertexId": "v4",
+					"targetVertexId": "v8",
+					"weight": 0.3,
+					"properties": {
+						"description": "SUT sends a payload package."
+					}
+				},
+				{
+					"id": "e9",
+					"name": "sut_receive_payload",
+					"sourceVertexId": "v4",
+					"targetVertexId": "v9",
+					"weight": 0.3,
+					"properties": {
+						"description": "SUT receives a payload for its communication partner."
+					}
+				},
+				{
+					"id": "e10",
+					"name": "sut_ack_received",
+					"sourceVertexId": "v8",
+					"targetVertexId": "v4"
+				},
+				{
+					"id": "e11",
+					"name": "sut_send_ack",
+					"sourceVertexId": "v9",
+					"targetVertexId": "v4",
+					"properties": {
+						"description": "SUT acks the received data."
+					}
+				},
+				{
+					"id": "e14",
+					"name": "sut_send_fin",
+					"sourceVertexId": "v4",
+					"targetVertexId": "v12",
+					"weight": 0.2,
+					"properties": {
+						"description": "SUT closes the connection by sending a fin package."
+					}
+				},
+				{
+					"id": "e15",
+					"name": "sut_receive_fin",
+					"sourceVertexId": "v4",
+					"targetVertexId": "v13",
+					"weight": 0.2,
+					"properties": {
+						"description": "The SUT receives a fin from its communication partner."
+					}
+				},
+				{
+					"id": "e16",
+					"name": "sut_receive_fin_ack",
+					"sourceVertexId": "v12",
+					"targetVertexId": "v15",
+					"properties": {
+						"description": "SUT receives a fin ack from its partner."
+					}
+				},
+				{
+					"id": "e18",
+					"name": "sut_send_ack",
+					"sourceVertexId": "v15",
+					"targetVertexId": "v0",
+					"properties": {
+						"description": "The SUT has send out the final ack and is back in a open state."
+					}
+				},
+				{
+					"id": "e20",
+					"sourceVertexId": "v13",
+					"targetVertexId": "v18",
+					"name": "sut_send_ack",
+					"properties": {
+						"description": "The SUT acks the incoming fin ack."
+					}
+				},
+				{
+					"id": "e22",
+					"name": "sut_receive_ack",
+					"sourceVertexId": "v5",
+					"targetVertexId": "v0"
+				},
+				{
+					"id": "e4",
+					"name": "sut_enter_listen_state",
+					"sourceVertexId": "v0",
+					"targetVertexId": "v3",
+					"weight": 0.5,
+					"properties": {
+						"description": "SUT enter the Listen state."
+					}
+				},
+				{
+					"id": "e0",
+					"sourceVertexId": "v3",
+					"targetVertexId": "v6",
+					"name": "sut_receive_syn",
+					"properties": {
+						"description": "SUT receives an SYN from its connection partner."
+					}
+				},
+				{
+					"id": "e5",
+					"name": "sut_fin_ack_send",
+					"sourceVertexId": "v18",
+					"targetVertexId": "v5"
+				}
+			]
+		}
+	]
+}
